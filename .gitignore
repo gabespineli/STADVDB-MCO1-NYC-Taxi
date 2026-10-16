@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment variables & secrets
+.env
+*.env
+
+# Large dataset files
+parquet_data/
+*.parquet
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database dumps / temp files
+*.sqlite3
+*.log

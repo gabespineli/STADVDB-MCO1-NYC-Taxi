@@ -1,0 +1,6 @@
+pandas
+pyarrow
+SQLAlchemy
+pymysql
+python-dotenv
+tqdm
