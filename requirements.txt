@@ -4,3 +4,4 @@ SQLAlchemy
 pymysql
 python-dotenv
 tqdm
+dotenv
