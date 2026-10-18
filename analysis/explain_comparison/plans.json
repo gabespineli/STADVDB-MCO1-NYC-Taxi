@@ -1,0 +1,3188 @@
+{
+  "captured_at": "2026-10-19T04:48:30.466535+08:00",
+  "database": "source_db",
+  "note": "Plain EXPLAIN only. Both versions use the same current indexes and statistics; this does not recreate historical pre-index plans.",
+  "queries": {
+    "Q1A": {
+      "baseline": {
+        "sql_sha256": "679c1111e1a8a6c17cc8bf8f687df103bf669b951c2212e5dc5dfb79e8421e7b",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "d",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 366,
+            "filtered": 100.0,
+            "Extra": "Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "idx_fact_pu_date,idx_fact_pu_location,idx_olap_q1_cover",
+            "key": "idx_fact_pu_date",
+            "key_len": "4",
+            "ref": "source_db.d.date_id",
+            "rows": 913,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "l",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_location_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "t",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_time_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": "Using where"
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "824632.08"
+            },
+            "grouping_operation": {
+              "using_temporary_table": true,
+              "using_filesort": true,
+              "cost_info": {
+                "sort_cost": "334360.14"
+              },
+              "buffer_result": {
+                "using_temporary_table": true,
+                "nested_loop": [
+                  {
+                    "table": {
+                      "table_name": "d",
+                      "access_type": "ALL",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "rows_examined_per_scan": 366,
+                      "rows_produced_per_join": 366,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "0.25",
+                        "eval_cost": "36.60",
+                        "prefix_cost": "36.85",
+                        "data_read_per_join": "20K"
+                      },
+                      "used_columns": [
+                        "date_id",
+                        "is_weekend"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "f",
+                      "access_type": "ref",
+                      "possible_keys": [
+                        "idx_fact_pu_date",
+                        "idx_fact_pu_location",
+                        "idx_olap_q1_cover"
+                      ],
+                      "key": "idx_fact_pu_date",
+                      "used_key_parts": [
+                        "pu_date_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.d.date_id"
+                      ],
+                      "rows_examined_per_scan": 913,
+                      "rows_produced_per_join": 334360,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "222746.97",
+                        "eval_cost": "33436.01",
+                        "prefix_cost": "256219.83",
+                        "data_read_per_join": "33M"
+                      },
+                      "used_columns": [
+                        "trip_id",
+                        "pu_date_id",
+                        "pu_time_id",
+                        "pu_location_id"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "l",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "location_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_location_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 334360,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "83590.04",
+                        "eval_cost": "33436.01",
+                        "prefix_cost": "373245.88",
+                        "data_read_per_join": "196M"
+                      },
+                      "used_columns": [
+                        "location_id",
+                        "zone",
+                        "borough"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "t",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "time_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_time_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 334360,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "83590.04",
+                        "eval_cost": "33436.01",
+                        "prefix_cost": "490271.93",
+                        "data_read_per_join": "30M"
+                      },
+                      "used_columns": [
+                        "time_id",
+                        "time_period"
+                      ],
+                      "attached_condition": "((`source_db`.`t`.`time_period` = 'Late Night') or (`source_db`.`d`.`is_weekend` = 1))"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "optimized": {
+        "sql_sha256": "679c1111e1a8a6c17cc8bf8f687df103bf669b951c2212e5dc5dfb79e8421e7b",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "d",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 366,
+            "filtered": 100.0,
+            "Extra": "Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "idx_fact_pu_date,idx_fact_pu_location,idx_olap_q1_cover",
+            "key": "idx_fact_pu_date",
+            "key_len": "4",
+            "ref": "source_db.d.date_id",
+            "rows": 913,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "l",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_location_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "t",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_time_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": "Using where"
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "824632.08"
+            },
+            "grouping_operation": {
+              "using_temporary_table": true,
+              "using_filesort": true,
+              "cost_info": {
+                "sort_cost": "334360.14"
+              },
+              "buffer_result": {
+                "using_temporary_table": true,
+                "nested_loop": [
+                  {
+                    "table": {
+                      "table_name": "d",
+                      "access_type": "ALL",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "rows_examined_per_scan": 366,
+                      "rows_produced_per_join": 366,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "0.25",
+                        "eval_cost": "36.60",
+                        "prefix_cost": "36.85",
+                        "data_read_per_join": "20K"
+                      },
+                      "used_columns": [
+                        "date_id",
+                        "is_weekend"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "f",
+                      "access_type": "ref",
+                      "possible_keys": [
+                        "idx_fact_pu_date",
+                        "idx_fact_pu_location",
+                        "idx_olap_q1_cover"
+                      ],
+                      "key": "idx_fact_pu_date",
+                      "used_key_parts": [
+                        "pu_date_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.d.date_id"
+                      ],
+                      "rows_examined_per_scan": 913,
+                      "rows_produced_per_join": 334360,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "222746.97",
+                        "eval_cost": "33436.01",
+                        "prefix_cost": "256219.83",
+                        "data_read_per_join": "33M"
+                      },
+                      "used_columns": [
+                        "trip_id",
+                        "pu_date_id",
+                        "pu_time_id",
+                        "pu_location_id"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "l",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "location_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_location_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 334360,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "83590.04",
+                        "eval_cost": "33436.01",
+                        "prefix_cost": "373245.88",
+                        "data_read_per_join": "196M"
+                      },
+                      "used_columns": [
+                        "location_id",
+                        "zone",
+                        "borough"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "t",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "time_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_time_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 334360,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "83590.04",
+                        "eval_cost": "33436.01",
+                        "prefix_cost": "490271.93",
+                        "data_read_per_join": "30M"
+                      },
+                      "used_columns": [
+                        "time_id",
+                        "time_period"
+                      ],
+                      "attached_condition": "((`source_db`.`t`.`time_period` = 'Late Night') or (`source_db`.`d`.`is_weekend` = 1))"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "Q1B": {
+      "baseline": {
+        "sql_sha256": "b07236d78bedba6a28a820e131f6d7b26d875eddc18fcd8578ef640c927c93fe",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "d",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 366,
+            "filtered": 100.0,
+            "Extra": "Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "idx_fact_pu_date,idx_fact_pu_location,idx_olap_q1_cover",
+            "key": "idx_fact_pu_date",
+            "key_len": "4",
+            "ref": "source_db.d.date_id",
+            "rows": 913,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "l",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_location_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "t",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_time_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "490271.93"
+            },
+            "ordering_operation": {
+              "using_filesort": true,
+              "grouping_operation": {
+                "using_temporary_table": true,
+                "using_filesort": true,
+                "buffer_result": {
+                  "using_temporary_table": true,
+                  "nested_loop": [
+                    {
+                      "table": {
+                        "table_name": "d",
+                        "access_type": "ALL",
+                        "possible_keys": [
+                          "PRIMARY"
+                        ],
+                        "rows_examined_per_scan": 366,
+                        "rows_produced_per_join": 366,
+                        "filtered": "100.00",
+                        "cost_info": {
+                          "read_cost": "0.25",
+                          "eval_cost": "36.60",
+                          "prefix_cost": "36.85",
+                          "data_read_per_join": "20K"
+                        },
+                        "used_columns": [
+                          "date_id",
+                          "date",
+                          "is_weekend"
+                        ]
+                      }
+                    },
+                    {
+                      "table": {
+                        "table_name": "f",
+                        "access_type": "ref",
+                        "possible_keys": [
+                          "idx_fact_pu_date",
+                          "idx_fact_pu_location",
+                          "idx_olap_q1_cover"
+                        ],
+                        "key": "idx_fact_pu_date",
+                        "used_key_parts": [
+                          "pu_date_id"
+                        ],
+                        "key_length": "4",
+                        "ref": [
+                          "source_db.d.date_id"
+                        ],
+                        "rows_examined_per_scan": 913,
+                        "rows_produced_per_join": 334360,
+                        "filtered": "100.00",
+                        "cost_info": {
+                          "read_cost": "222746.97",
+                          "eval_cost": "33436.01",
+                          "prefix_cost": "256219.83",
+                          "data_read_per_join": "33M"
+                        },
+                        "used_columns": [
+                          "trip_id",
+                          "pu_date_id",
+                          "pu_time_id",
+                          "pu_location_id"
+                        ]
+                      }
+                    },
+                    {
+                      "table": {
+                        "table_name": "l",
+                        "access_type": "eq_ref",
+                        "possible_keys": [
+                          "PRIMARY"
+                        ],
+                        "key": "PRIMARY",
+                        "used_key_parts": [
+                          "location_id"
+                        ],
+                        "key_length": "4",
+                        "ref": [
+                          "source_db.f.pu_location_id"
+                        ],
+                        "rows_examined_per_scan": 1,
+                        "rows_produced_per_join": 334360,
+                        "filtered": "100.00",
+                        "cost_info": {
+                          "read_cost": "83590.04",
+                          "eval_cost": "33436.01",
+                          "prefix_cost": "373245.88",
+                          "data_read_per_join": "196M"
+                        },
+                        "used_columns": [
+                          "location_id",
+                          "borough"
+                        ]
+                      }
+                    },
+                    {
+                      "table": {
+                        "table_name": "t",
+                        "access_type": "eq_ref",
+                        "possible_keys": [
+                          "PRIMARY"
+                        ],
+                        "key": "PRIMARY",
+                        "used_key_parts": [
+                          "time_id"
+                        ],
+                        "key_length": "4",
+                        "ref": [
+                          "source_db.f.pu_time_id"
+                        ],
+                        "rows_examined_per_scan": 1,
+                        "rows_produced_per_join": 334360,
+                        "filtered": "100.00",
+                        "cost_info": {
+                          "read_cost": "83590.04",
+                          "eval_cost": "33436.01",
+                          "prefix_cost": "490271.93",
+                          "data_read_per_join": "30M"
+                        },
+                        "used_columns": [
+                          "time_id",
+                          "hour",
+                          "time_period"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "optimized": {
+        "sql_sha256": "77307a128cdd131afd603289fc75bdd29015278cc7a6bc847302588a3fbed791",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "PRIMARY",
+            "table": "<derived2>",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": null,
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 334360,
+            "filtered": 100.0,
+            "Extra": "Using temporary; Using filesort"
+          },
+          {
+            "id": 2,
+            "select_type": "DERIVED",
+            "table": "d",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 366,
+            "filtered": 100.0,
+            "Extra": "Using temporary"
+          },
+          {
+            "id": 2,
+            "select_type": "DERIVED",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "idx_fact_pu_date,idx_fact_pu_location,idx_olap_q1_cover",
+            "key": "idx_fact_pu_date",
+            "key_len": "4",
+            "ref": "source_db.d.date_id",
+            "rows": 913,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 2,
+            "select_type": "DERIVED",
+            "table": "l",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_location_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 2,
+            "select_type": "DERIVED",
+            "table": "t",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_time_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "37618.00"
+            },
+            "ordering_operation": {
+              "using_filesort": true,
+              "grouping_operation": {
+                "using_temporary_table": true,
+                "using_filesort": false,
+                "table": {
+                  "table_name": "daily_demand",
+                  "access_type": "ALL",
+                  "rows_examined_per_scan": 334360,
+                  "rows_produced_per_join": 334360,
+                  "filtered": "100.00",
+                  "cost_info": {
+                    "read_cost": "4182.00",
+                    "eval_cost": "33436.00",
+                    "prefix_cost": "37618.00",
+                    "data_read_per_join": "96M"
+                  },
+                  "used_columns": [
+                    "borough",
+                    "time_period",
+                    "hour",
+                    "pickup_date",
+                    "is_weekend",
+                    "pickups"
+                  ],
+                  "materialized_from_subquery": {
+                    "using_temporary_table": true,
+                    "dependent": false,
+                    "cacheable": true,
+                    "query_block": {
+                      "select_id": 2,
+                      "cost_info": {
+                        "query_cost": "490271.93"
+                      },
+                      "grouping_operation": {
+                        "using_temporary_table": true,
+                        "using_filesort": false,
+                        "nested_loop": [
+                          {
+                            "table": {
+                              "table_name": "d",
+                              "access_type": "ALL",
+                              "possible_keys": [
+                                "PRIMARY"
+                              ],
+                              "rows_examined_per_scan": 366,
+                              "rows_produced_per_join": 366,
+                              "filtered": "100.00",
+                              "cost_info": {
+                                "read_cost": "0.25",
+                                "eval_cost": "36.60",
+                                "prefix_cost": "36.85",
+                                "data_read_per_join": "20K"
+                              },
+                              "used_columns": [
+                                "date_id",
+                                "date",
+                                "is_weekend"
+                              ]
+                            }
+                          },
+                          {
+                            "table": {
+                              "table_name": "f",
+                              "access_type": "ref",
+                              "possible_keys": [
+                                "idx_fact_pu_date",
+                                "idx_fact_pu_location",
+                                "idx_olap_q1_cover"
+                              ],
+                              "key": "idx_fact_pu_date",
+                              "used_key_parts": [
+                                "pu_date_id"
+                              ],
+                              "key_length": "4",
+                              "ref": [
+                                "source_db.d.date_id"
+                              ],
+                              "rows_examined_per_scan": 913,
+                              "rows_produced_per_join": 334360,
+                              "filtered": "100.00",
+                              "cost_info": {
+                                "read_cost": "222746.97",
+                                "eval_cost": "33436.01",
+                                "prefix_cost": "256219.83",
+                                "data_read_per_join": "33M"
+                              },
+                              "used_columns": [
+                                "trip_id",
+                                "pu_date_id",
+                                "pu_time_id",
+                                "pu_location_id"
+                              ]
+                            }
+                          },
+                          {
+                            "table": {
+                              "table_name": "l",
+                              "access_type": "eq_ref",
+                              "possible_keys": [
+                                "PRIMARY"
+                              ],
+                              "key": "PRIMARY",
+                              "used_key_parts": [
+                                "location_id"
+                              ],
+                              "key_length": "4",
+                              "ref": [
+                                "source_db.f.pu_location_id"
+                              ],
+                              "rows_examined_per_scan": 1,
+                              "rows_produced_per_join": 334360,
+                              "filtered": "100.00",
+                              "cost_info": {
+                                "read_cost": "83590.04",
+                                "eval_cost": "33436.01",
+                                "prefix_cost": "373245.88",
+                                "data_read_per_join": "196M"
+                              },
+                              "used_columns": [
+                                "location_id",
+                                "borough"
+                              ]
+                            }
+                          },
+                          {
+                            "table": {
+                              "table_name": "t",
+                              "access_type": "eq_ref",
+                              "possible_keys": [
+                                "PRIMARY"
+                              ],
+                              "key": "PRIMARY",
+                              "used_key_parts": [
+                                "time_id"
+                              ],
+                              "key_length": "4",
+                              "ref": [
+                                "source_db.f.pu_time_id"
+                              ],
+                              "rows_examined_per_scan": 1,
+                              "rows_produced_per_join": 334360,
+                              "filtered": "100.00",
+                              "cost_info": {
+                                "read_cost": "83590.04",
+                                "eval_cost": "33436.01",
+                                "prefix_cost": "490271.93",
+                                "data_read_per_join": "30M"
+                              },
+                              "used_columns": [
+                                "time_id",
+                                "hour",
+                                "time_period"
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Q1C": {
+      "baseline": {
+        "sql_sha256": "c63f8a98b7c47ab18cb653f4cd2ce76a2cab56c98ee3a2151a442c8dde504fed",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "t",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 1440,
+            "filtered": 10.0,
+            "Extra": "Using where; Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "idx_fact_pu_date,idx_fact_pu_location,idx_olap_q1_cover",
+            "key": "idx_olap_q1_cover",
+            "key_len": "4",
+            "ref": "source_db.t.time_id",
+            "rows": 589,
+            "filtered": 100.0,
+            "Extra": "Using index"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "l",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_location_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "d",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_date_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "68457.92"
+            },
+            "grouping_operation": {
+              "using_temporary_table": true,
+              "using_filesort": true,
+              "buffer_result": {
+                "using_temporary_table": true,
+                "nested_loop": [
+                  {
+                    "table": {
+                      "table_name": "t",
+                      "access_type": "ALL",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "rows_examined_per_scan": 1440,
+                      "rows_produced_per_join": 144,
+                      "filtered": "10.00",
+                      "cost_info": {
+                        "read_cost": "131.10",
+                        "eval_cost": "14.40",
+                        "prefix_cost": "145.50",
+                        "data_read_per_join": "13K"
+                      },
+                      "used_columns": [
+                        "time_id",
+                        "time_period"
+                      ],
+                      "attached_condition": "(`source_db`.`t`.`time_period` = 'Late Night')"
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "f",
+                      "access_type": "ref",
+                      "possible_keys": [
+                        "idx_fact_pu_date",
+                        "idx_fact_pu_location",
+                        "idx_olap_q1_cover"
+                      ],
+                      "key": "idx_olap_q1_cover",
+                      "used_key_parts": [
+                        "pu_time_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.t.time_id"
+                      ],
+                      "rows_examined_per_scan": 589,
+                      "rows_produced_per_join": 84951,
+                      "filtered": "100.00",
+                      "using_index": true,
+                      "cost_info": {
+                        "read_cost": "350.85",
+                        "eval_cost": "8495.20",
+                        "prefix_cost": "8991.54",
+                        "data_read_per_join": "8M"
+                      },
+                      "used_columns": [
+                        "trip_id",
+                        "pu_date_id",
+                        "pu_time_id",
+                        "pu_location_id"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "l",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "location_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_location_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 84951,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "21237.99",
+                        "eval_cost": "8495.20",
+                        "prefix_cost": "38724.73",
+                        "data_read_per_join": "49M"
+                      },
+                      "used_columns": [
+                        "location_id",
+                        "zone"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "d",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "date_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_date_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 84951,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "21237.99",
+                        "eval_cost": "8495.20",
+                        "prefix_cost": "68457.92",
+                        "data_read_per_join": "4M"
+                      },
+                      "used_columns": [
+                        "date_id",
+                        "month",
+                        "quarter",
+                        "year"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "optimized": {
+        "sql_sha256": "c6cfa0b663bf1a7c0f24fcb4aa00ceaa1b8edc8b7f624b6d1a155f96fad2b9e7",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "PRIMARY",
+            "table": "<derived2>",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": null,
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 84951,
+            "filtered": 100.0,
+            "Extra": "Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "PRIMARY",
+            "table": "l",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "g.pu_location_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "PRIMARY",
+            "table": "d",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "g.pu_date_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 2,
+            "select_type": "DERIVED",
+            "table": "t",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 1440,
+            "filtered": 10.0,
+            "Extra": "Using where; Using temporary"
+          },
+          {
+            "id": 2,
+            "select_type": "DERIVED",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "idx_olap_q3_distance_cover,idx_olap_q1_cover",
+            "key": "idx_olap_q1_cover",
+            "key_len": "4",
+            "ref": "source_db.t.time_id",
+            "rows": 589,
+            "filtered": 100.0,
+            "Extra": "Using index"
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "69025.19"
+            },
+            "grouping_operation": {
+              "using_temporary_table": true,
+              "using_filesort": true,
+              "buffer_result": {
+                "using_temporary_table": true,
+                "nested_loop": [
+                  {
+                    "table": {
+                      "table_name": "g",
+                      "access_type": "ALL",
+                      "rows_examined_per_scan": 84951,
+                      "rows_produced_per_join": 84951,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "1064.39",
+                        "eval_cost": "8495.10",
+                        "prefix_cost": "9559.49",
+                        "data_read_per_join": "1M"
+                      },
+                      "used_columns": [
+                        "pu_location_id",
+                        "pu_date_id",
+                        "pickups"
+                      ],
+                      "materialized_from_subquery": {
+                        "using_temporary_table": true,
+                        "dependent": false,
+                        "cacheable": true,
+                        "query_block": {
+                          "select_id": 2,
+                          "cost_info": {
+                            "query_cost": "8991.54"
+                          },
+                          "grouping_operation": {
+                            "using_temporary_table": true,
+                            "using_filesort": false,
+                            "nested_loop": [
+                              {
+                                "table": {
+                                  "table_name": "t",
+                                  "access_type": "ALL",
+                                  "possible_keys": [
+                                    "PRIMARY"
+                                  ],
+                                  "rows_examined_per_scan": 1440,
+                                  "rows_produced_per_join": 144,
+                                  "filtered": "10.00",
+                                  "cost_info": {
+                                    "read_cost": "131.10",
+                                    "eval_cost": "14.40",
+                                    "prefix_cost": "145.50",
+                                    "data_read_per_join": "13K"
+                                  },
+                                  "used_columns": [
+                                    "time_id",
+                                    "time_period"
+                                  ],
+                                  "attached_condition": "(`source_db`.`t`.`time_period` = 'Late Night')"
+                                }
+                              },
+                              {
+                                "table": {
+                                  "table_name": "f",
+                                  "access_type": "ref",
+                                  "possible_keys": [
+                                    "idx_olap_q3_distance_cover",
+                                    "idx_olap_q1_cover"
+                                  ],
+                                  "key": "idx_olap_q1_cover",
+                                  "used_key_parts": [
+                                    "pu_time_id"
+                                  ],
+                                  "key_length": "4",
+                                  "ref": [
+                                    "source_db.t.time_id"
+                                  ],
+                                  "rows_examined_per_scan": 589,
+                                  "rows_produced_per_join": 84951,
+                                  "filtered": "100.00",
+                                  "using_index": true,
+                                  "cost_info": {
+                                    "read_cost": "350.85",
+                                    "eval_cost": "8495.20",
+                                    "prefix_cost": "8991.54",
+                                    "data_read_per_join": "8M"
+                                  },
+                                  "used_columns": [
+                                    "trip_id",
+                                    "pu_date_id",
+                                    "pu_time_id",
+                                    "pu_location_id"
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "l",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "location_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "g.pu_location_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 84951,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "21237.75",
+                        "eval_cost": "8495.10",
+                        "prefix_cost": "39292.34",
+                        "data_read_per_join": "49M"
+                      },
+                      "used_columns": [
+                        "location_id",
+                        "zone"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "d",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "date_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "g.pu_date_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 84951,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "21237.75",
+                        "eval_cost": "8495.10",
+                        "prefix_cost": "69025.19",
+                        "data_read_per_join": "4M"
+                      },
+                      "used_columns": [
+                        "date_id",
+                        "month",
+                        "quarter",
+                        "year"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "Q2A": {
+      "baseline": {
+        "sql_sha256": "28b0c879048afa67b62dcac00d6d44dc8223c4a2620014da4fb2797a60acd6c9",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "p",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 7,
+            "filtered": 100.0,
+            "Extra": "Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "fk_fact_payment",
+            "key": "fk_fact_payment",
+            "key_len": "4",
+            "ref": "source_db.p.payment_id",
+            "rows": 12713,
+            "filtered": 33.33,
+            "Extra": "Using where"
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "97847.94"
+            },
+            "grouping_operation": {
+              "using_temporary_table": true,
+              "using_filesort": true,
+              "cost_info": {
+                "sort_cost": "29661.20"
+              },
+              "buffer_result": {
+                "using_temporary_table": true,
+                "nested_loop": [
+                  {
+                    "table": {
+                      "table_name": "p",
+                      "access_type": "ALL",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "rows_examined_per_scan": 7,
+                      "rows_produced_per_join": 7,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "1.00",
+                        "eval_cost": "0.70",
+                        "prefix_cost": "1.70",
+                        "data_read_per_join": "896"
+                      },
+                      "used_columns": [
+                        "payment_id",
+                        "payment_method"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "f",
+                      "access_type": "ref",
+                      "possible_keys": [
+                        "fk_fact_payment"
+                      ],
+                      "key": "fk_fact_payment",
+                      "used_key_parts": [
+                        "payment_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.p.payment_id"
+                      ],
+                      "rows_examined_per_scan": 12713,
+                      "rows_produced_per_join": 29661,
+                      "filtered": "33.33",
+                      "cost_info": {
+                        "read_cost": "59285.80",
+                        "eval_cost": "2966.12",
+                        "prefix_cost": "68186.74",
+                        "data_read_per_join": "2M"
+                      },
+                      "used_columns": [
+                        "trip_id",
+                        "payment_id",
+                        "fare_amount",
+                        "tip_amount"
+                      ],
+                      "attached_condition": "(`source_db`.`f`.`fare_amount` > 0.00)"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "optimized": {
+        "sql_sha256": "3f05e5d4573e26f6c5da3350098c838538b7fabddb71572c27b349b911e61037",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "PRIMARY",
+            "table": "p",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 7,
+            "filtered": 100.0,
+            "Extra": "Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "PRIMARY",
+            "table": "<derived2>",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "<auto_key0>",
+            "key": "<auto_key0>",
+            "key_len": "4",
+            "ref": "source_db.p.payment_id",
+            "rows": 148729,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 2,
+            "select_type": "DERIVED",
+            "table": "f",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": null,
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 44623375,
+            "filtered": 33.33,
+            "Extra": "Using where; Using temporary"
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "1405497.36"
+            },
+            "grouping_operation": {
+              "using_temporary_table": true,
+              "using_filesort": true,
+              "cost_info": {
+                "sort_cost": "1041107.90"
+              },
+              "buffer_result": {
+                "using_temporary_table": true,
+                "nested_loop": [
+                  {
+                    "table": {
+                      "table_name": "p",
+                      "access_type": "ALL",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "rows_examined_per_scan": 7,
+                      "rows_produced_per_join": 7,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "1.00",
+                        "eval_cost": "0.70",
+                        "prefix_cost": "1.70",
+                        "data_read_per_join": "896"
+                      },
+                      "used_columns": [
+                        "payment_id",
+                        "payment_method"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "g",
+                      "access_type": "ref",
+                      "possible_keys": [
+                        "<auto_key0>"
+                      ],
+                      "key": "<auto_key0>",
+                      "used_key_parts": [
+                        "payment_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.p.payment_id"
+                      ],
+                      "rows_examined_per_scan": 148729,
+                      "rows_produced_per_join": 1041107,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "260276.98",
+                        "eval_cost": "104110.79",
+                        "prefix_cost": "364389.47",
+                        "data_read_per_join": "47M"
+                      },
+                      "used_columns": [
+                        "payment_id",
+                        "fare_tier",
+                        "trips",
+                        "tip_sum",
+                        "tip_count"
+                      ],
+                      "materialized_from_subquery": {
+                        "using_temporary_table": true,
+                        "dependent": false,
+                        "cacheable": true,
+                        "query_block": {
+                          "select_id": 2,
+                          "cost_info": {
+                            "query_cost": "4690440.53"
+                          },
+                          "grouping_operation": {
+                            "using_temporary_table": true,
+                            "using_filesort": false,
+                            "table": {
+                              "table_name": "f",
+                              "access_type": "ALL",
+                              "rows_examined_per_scan": 44623375,
+                              "rows_produced_per_join": 14872970,
+                              "filtered": "33.33",
+                              "cost_info": {
+                                "read_cost": "3203143.46",
+                                "eval_cost": "1487297.06",
+                                "prefix_cost": "4690440.53",
+                                "data_read_per_join": "1G"
+                              },
+                              "used_columns": [
+                                "trip_id",
+                                "payment_id",
+                                "fare_amount",
+                                "tip_amount"
+                              ],
+                              "attached_condition": "(`source_db`.`f`.`fare_amount` > 0.00)"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "Q2B": {
+      "baseline": {
+        "sql_sha256": "3550f2000e01245e126079d3ec4cf0c2cee3c15430e46851d63952b6b59bcae8",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "p",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 7,
+            "filtered": 100.0,
+            "Extra": "Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "fk_fact_payment,idx_fact_pu_location,idx_olap_q1_cover",
+            "key": "fk_fact_payment",
+            "key_len": "4",
+            "ref": "source_db.p.payment_id",
+            "rows": 12713,
+            "filtered": 33.33,
+            "Extra": "Using where"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "l",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_location_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "t",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_time_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "88949.58"
+            },
+            "grouping_operation": {
+              "using_temporary_table": true,
+              "using_filesort": true,
+              "buffer_result": {
+                "using_temporary_table": true,
+                "nested_loop": [
+                  {
+                    "table": {
+                      "table_name": "p",
+                      "access_type": "ALL",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "rows_examined_per_scan": 7,
+                      "rows_produced_per_join": 7,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "1.00",
+                        "eval_cost": "0.70",
+                        "prefix_cost": "1.70",
+                        "data_read_per_join": "896"
+                      },
+                      "used_columns": [
+                        "payment_id",
+                        "payment_method"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "f",
+                      "access_type": "ref",
+                      "possible_keys": [
+                        "fk_fact_payment",
+                        "idx_fact_pu_location",
+                        "idx_olap_q1_cover"
+                      ],
+                      "key": "fk_fact_payment",
+                      "used_key_parts": [
+                        "payment_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.p.payment_id"
+                      ],
+                      "rows_examined_per_scan": 12713,
+                      "rows_produced_per_join": 29661,
+                      "filtered": "33.33",
+                      "cost_info": {
+                        "read_cost": "59285.80",
+                        "eval_cost": "2966.12",
+                        "prefix_cost": "68186.74",
+                        "data_read_per_join": "2M"
+                      },
+                      "used_columns": [
+                        "trip_id",
+                        "pu_time_id",
+                        "pu_location_id",
+                        "payment_id",
+                        "fare_amount",
+                        "tip_amount",
+                        "total_amount"
+                      ],
+                      "attached_condition": "(`source_db`.`f`.`fare_amount` > 0.00)"
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "l",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "location_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_location_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 29661,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "7415.30",
+                        "eval_cost": "2966.12",
+                        "prefix_cost": "78568.16",
+                        "data_read_per_join": "17M"
+                      },
+                      "used_columns": [
+                        "location_id",
+                        "borough"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "t",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "time_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_time_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 29661,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "7415.30",
+                        "eval_cost": "2966.12",
+                        "prefix_cost": "88949.58",
+                        "data_read_per_join": "2M"
+                      },
+                      "used_columns": [
+                        "time_id",
+                        "time_period"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "optimized": {
+        "sql_sha256": "db5fcda930cdb743dfa42c844abc75dd24543d794fdd1920060f59cdaf557800",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "PRIMARY",
+            "table": "p",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 7,
+            "filtered": 100.0,
+            "Extra": "Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "PRIMARY",
+            "table": "<derived2>",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "<auto_key2>",
+            "key": "<auto_key2>",
+            "key_len": "4",
+            "ref": "source_db.p.payment_id",
+            "rows": 4247,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "PRIMARY",
+            "table": "l",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "g.pu_location_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 2,
+            "select_type": "DERIVED",
+            "table": "t",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 1440,
+            "filtered": 100.0,
+            "Extra": "Using temporary"
+          },
+          {
+            "id": 2,
+            "select_type": "DERIVED",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "idx_olap_q1_cover",
+            "key": "idx_olap_q1_cover",
+            "key_len": "4",
+            "ref": "source_db.t.time_id",
+            "rows": 589,
+            "filtered": 33.33,
+            "Extra": "Using where"
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "20812.78"
+            },
+            "grouping_operation": {
+              "using_temporary_table": true,
+              "using_filesort": true,
+              "buffer_result": {
+                "using_temporary_table": true,
+                "nested_loop": [
+                  {
+                    "table": {
+                      "table_name": "p",
+                      "access_type": "ALL",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "rows_examined_per_scan": 7,
+                      "rows_produced_per_join": 7,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "1.00",
+                        "eval_cost": "0.70",
+                        "prefix_cost": "1.70",
+                        "data_read_per_join": "896"
+                      },
+                      "used_columns": [
+                        "payment_id",
+                        "payment_method"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "g",
+                      "access_type": "ref",
+                      "possible_keys": [
+                        "<auto_key2>"
+                      ],
+                      "key": "<auto_key2>",
+                      "used_key_parts": [
+                        "payment_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.p.payment_id"
+                      ],
+                      "rows_examined_per_scan": 4247,
+                      "rows_produced_per_join": 29730,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "7432.53",
+                        "eval_cost": "2973.01",
+                        "prefix_cost": "10407.24",
+                        "data_read_per_join": "4M"
+                      },
+                      "used_columns": [
+                        "pu_location_id",
+                        "time_period",
+                        "payment_id",
+                        "trips",
+                        "fare_sum",
+                        "fare_count",
+                        "tip_sum",
+                        "tip_count",
+                        "total_sum",
+                        "total_count"
+                      ],
+                      "materialized_from_subquery": {
+                        "using_temporary_table": true,
+                        "dependent": false,
+                        "cacheable": true,
+                        "query_block": {
+                          "select_id": 2,
+                          "cost_info": {
+                            "query_cost": "651037.84"
+                          },
+                          "grouping_operation": {
+                            "using_temporary_table": true,
+                            "using_filesort": false,
+                            "nested_loop": [
+                              {
+                                "table": {
+                                  "table_name": "t",
+                                  "access_type": "ALL",
+                                  "possible_keys": [
+                                    "PRIMARY"
+                                  ],
+                                  "rows_examined_per_scan": 1440,
+                                  "rows_produced_per_join": 1440,
+                                  "filtered": "100.00",
+                                  "cost_info": {
+                                    "read_cost": "1.50",
+                                    "eval_cost": "144.00",
+                                    "prefix_cost": "145.50",
+                                    "data_read_per_join": "135K"
+                                  },
+                                  "used_columns": [
+                                    "time_id",
+                                    "time_period"
+                                  ]
+                                }
+                              },
+                              {
+                                "table": {
+                                  "table_name": "f",
+                                  "access_type": "ref",
+                                  "possible_keys": [
+                                    "idx_olap_q1_cover"
+                                  ],
+                                  "key": "idx_olap_q1_cover",
+                                  "used_key_parts": [
+                                    "pu_time_id"
+                                  ],
+                                  "key_length": "4",
+                                  "ref": [
+                                    "source_db.t.time_id"
+                                  ],
+                                  "rows_examined_per_scan": 589,
+                                  "rows_produced_per_join": 283144,
+                                  "filtered": "33.33",
+                                  "cost_info": {
+                                    "read_cost": "565940.39",
+                                    "eval_cost": "28314.49",
+                                    "prefix_cost": "651037.84",
+                                    "data_read_per_join": "28M"
+                                  },
+                                  "used_columns": [
+                                    "trip_id",
+                                    "pu_time_id",
+                                    "pu_location_id",
+                                    "payment_id",
+                                    "fare_amount",
+                                    "tip_amount",
+                                    "total_amount"
+                                  ],
+                                  "attached_condition": "(`source_db`.`f`.`fare_amount` > 0.00)"
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "l",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "location_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "g.pu_location_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 29730,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "7432.53",
+                        "eval_cost": "2973.01",
+                        "prefix_cost": "20812.78",
+                        "data_read_per_join": "17M"
+                      },
+                      "used_columns": [
+                        "location_id",
+                        "borough"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "Q3A": {
+      "baseline": {
+        "sql_sha256": "19d00cf73f560b49cc150fede388290b2f617b883e84c929b38a233b2d23146a",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "d",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 366,
+            "filtered": 10.0,
+            "Extra": "Using where; Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "idx_fact_pu_date,idx_fact_pu_location,idx_olap_q3_distance_cover,idx_olap_q1_cover",
+            "key": "idx_fact_pu_date",
+            "key_len": "4",
+            "ref": "source_db.d.date_id",
+            "rows": 913,
+            "filtered": 16.66,
+            "Extra": "Using where"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "l",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_location_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "t",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_time_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "29555.63"
+            },
+            "grouping_operation": {
+              "using_temporary_table": true,
+              "using_filesort": true,
+              "buffer_result": {
+                "using_temporary_table": true,
+                "nested_loop": [
+                  {
+                    "table": {
+                      "table_name": "d",
+                      "access_type": "ALL",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "rows_examined_per_scan": 366,
+                      "rows_produced_per_join": 36,
+                      "filtered": "10.00",
+                      "cost_info": {
+                        "read_cost": "33.19",
+                        "eval_cost": "3.66",
+                        "prefix_cost": "36.85",
+                        "data_read_per_join": "2K"
+                      },
+                      "used_columns": [
+                        "date_id",
+                        "is_weekend"
+                      ],
+                      "attached_condition": "(`source_db`.`d`.`is_weekend` = 0)"
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "f",
+                      "access_type": "ref",
+                      "possible_keys": [
+                        "idx_fact_pu_date",
+                        "idx_fact_pu_location",
+                        "idx_olap_q3_distance_cover",
+                        "idx_olap_q1_cover"
+                      ],
+                      "key": "idx_fact_pu_date",
+                      "used_key_parts": [
+                        "pu_date_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.d.date_id"
+                      ],
+                      "rows_examined_per_scan": 913,
+                      "rows_produced_per_join": 5572,
+                      "filtered": "16.66",
+                      "cost_info": {
+                        "read_cost": "22274.70",
+                        "eval_cost": "557.21",
+                        "prefix_cost": "25655.15",
+                        "data_read_per_join": "565K"
+                      },
+                      "used_columns": [
+                        "trip_id",
+                        "pu_date_id",
+                        "pu_time_id",
+                        "pu_location_id",
+                        "trip_distance",
+                        "trip_duration_seconds",
+                        "estimated_speed_mph"
+                      ],
+                      "attached_condition": "((`source_db`.`f`.`trip_distance` > 0.00) and (`source_db`.`f`.`trip_duration_seconds` > 0))"
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "l",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "location_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_location_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 5572,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "1393.03",
+                        "eval_cost": "557.21",
+                        "prefix_cost": "27605.39",
+                        "data_read_per_join": "3M"
+                      },
+                      "used_columns": [
+                        "location_id",
+                        "borough"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "t",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "time_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_time_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 5572,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "1393.03",
+                        "eval_cost": "557.21",
+                        "prefix_cost": "29555.63",
+                        "data_read_per_join": "522K"
+                      },
+                      "used_columns": [
+                        "time_id",
+                        "time_period"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "optimized": {
+        "sql_sha256": "c1da509c09c438ed55deb0d1b361e9df0ad4f23c26976d96c9b28113d5f693c8",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "PRIMARY",
+            "table": "l",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 266,
+            "filtered": 100.0,
+            "Extra": "Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "PRIMARY",
+            "table": "<derived2>",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "<auto_key0>",
+            "key": "<auto_key0>",
+            "key_len": "4",
+            "ref": "source_db.l.location_id",
+            "rows": 20,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 2,
+            "select_type": "DERIVED",
+            "table": "d",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 366,
+            "filtered": 10.0,
+            "Extra": "Using where; Using temporary"
+          },
+          {
+            "id": 2,
+            "select_type": "DERIVED",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "idx_fact_pu_date,idx_olap_q3_distance_cover,idx_olap_q1_cover",
+            "key": "idx_fact_pu_date",
+            "key_len": "4",
+            "ref": "source_db.d.date_id",
+            "rows": 913,
+            "filtered": 16.66,
+            "Extra": "Using where"
+          },
+          {
+            "id": 2,
+            "select_type": "DERIVED",
+            "table": "t",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_time_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "1977.05"
+            },
+            "grouping_operation": {
+              "using_temporary_table": true,
+              "using_filesort": true,
+              "buffer_result": {
+                "using_temporary_table": true,
+                "nested_loop": [
+                  {
+                    "table": {
+                      "table_name": "l",
+                      "access_type": "ALL",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "rows_examined_per_scan": 266,
+                      "rows_produced_per_join": 266,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "0.25",
+                        "eval_cost": "26.60",
+                        "prefix_cost": "26.85",
+                        "data_read_per_join": "160K"
+                      },
+                      "used_columns": [
+                        "location_id",
+                        "borough"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "g",
+                      "access_type": "ref",
+                      "possible_keys": [
+                        "<auto_key0>"
+                      ],
+                      "key": "<auto_key0>",
+                      "used_key_parts": [
+                        "pu_location_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.l.location_id"
+                      ],
+                      "rows_examined_per_scan": 20,
+                      "rows_produced_per_join": 5572,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "1393.00",
+                        "eval_cost": "557.20",
+                        "prefix_cost": "1977.05",
+                        "data_read_per_join": "609K"
+                      },
+                      "used_columns": [
+                        "pu_location_id",
+                        "distance_tier",
+                        "rush_duration_sum",
+                        "rush_duration_count",
+                        "off_peak_duration_sum",
+                        "off_peak_duration_count",
+                        "rush_speed_sum",
+                        "rush_speed_count",
+                        "off_peak_speed_sum",
+                        "off_peak_speed_count"
+                      ],
+                      "materialized_from_subquery": {
+                        "using_temporary_table": true,
+                        "dependent": false,
+                        "cacheable": true,
+                        "query_block": {
+                          "select_id": 2,
+                          "cost_info": {
+                            "query_cost": "27605.39"
+                          },
+                          "grouping_operation": {
+                            "using_temporary_table": true,
+                            "using_filesort": false,
+                            "nested_loop": [
+                              {
+                                "table": {
+                                  "table_name": "d",
+                                  "access_type": "ALL",
+                                  "possible_keys": [
+                                    "PRIMARY"
+                                  ],
+                                  "rows_examined_per_scan": 366,
+                                  "rows_produced_per_join": 36,
+                                  "filtered": "10.00",
+                                  "cost_info": {
+                                    "read_cost": "33.19",
+                                    "eval_cost": "3.66",
+                                    "prefix_cost": "36.85",
+                                    "data_read_per_join": "2K"
+                                  },
+                                  "used_columns": [
+                                    "date_id",
+                                    "is_weekend"
+                                  ],
+                                  "attached_condition": "(`source_db`.`d`.`is_weekend` = 0)"
+                                }
+                              },
+                              {
+                                "table": {
+                                  "table_name": "f",
+                                  "access_type": "ref",
+                                  "possible_keys": [
+                                    "idx_fact_pu_date",
+                                    "idx_olap_q3_distance_cover",
+                                    "idx_olap_q1_cover"
+                                  ],
+                                  "key": "idx_fact_pu_date",
+                                  "used_key_parts": [
+                                    "pu_date_id"
+                                  ],
+                                  "key_length": "4",
+                                  "ref": [
+                                    "source_db.d.date_id"
+                                  ],
+                                  "rows_examined_per_scan": 913,
+                                  "rows_produced_per_join": 5572,
+                                  "filtered": "16.66",
+                                  "cost_info": {
+                                    "read_cost": "22274.70",
+                                    "eval_cost": "557.21",
+                                    "prefix_cost": "25655.15",
+                                    "data_read_per_join": "565K"
+                                  },
+                                  "used_columns": [
+                                    "trip_id",
+                                    "pu_date_id",
+                                    "pu_time_id",
+                                    "pu_location_id",
+                                    "trip_distance",
+                                    "trip_duration_seconds",
+                                    "estimated_speed_mph"
+                                  ],
+                                  "attached_condition": "((`source_db`.`f`.`trip_distance` > 0.00) and (`source_db`.`f`.`trip_duration_seconds` > 0))"
+                                }
+                              },
+                              {
+                                "table": {
+                                  "table_name": "t",
+                                  "access_type": "eq_ref",
+                                  "possible_keys": [
+                                    "PRIMARY"
+                                  ],
+                                  "key": "PRIMARY",
+                                  "used_key_parts": [
+                                    "time_id"
+                                  ],
+                                  "key_length": "4",
+                                  "ref": [
+                                    "source_db.f.pu_time_id"
+                                  ],
+                                  "rows_examined_per_scan": 1,
+                                  "rows_produced_per_join": 5572,
+                                  "filtered": "100.00",
+                                  "cost_info": {
+                                    "read_cost": "1393.03",
+                                    "eval_cost": "557.21",
+                                    "prefix_cost": "27605.39",
+                                    "data_read_per_join": "522K"
+                                  },
+                                  "used_columns": [
+                                    "time_id",
+                                    "time_period"
+                                  ]
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "Q3B": {
+      "baseline": {
+        "sql_sha256": "ed0354c91a07e410a86e57fed32248f49a4f3f3fa0f69f476c448c0a20411dac",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "d",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 366,
+            "filtered": 10.0,
+            "Extra": "Using where; Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "idx_fact_pu_date,idx_fact_pu_location,idx_olap_q3_distance_cover,idx_olap_q1_cover",
+            "key": "idx_fact_pu_date",
+            "key_len": "4",
+            "ref": "source_db.d.date_id",
+            "rows": 913,
+            "filtered": 16.66,
+            "Extra": "Using where"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "l",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_location_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "t",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_time_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "29555.63"
+            },
+            "ordering_operation": {
+              "using_filesort": true,
+              "grouping_operation": {
+                "using_temporary_table": true,
+                "using_filesort": false,
+                "nested_loop": [
+                  {
+                    "table": {
+                      "table_name": "d",
+                      "access_type": "ALL",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "rows_examined_per_scan": 366,
+                      "rows_produced_per_join": 36,
+                      "filtered": "10.00",
+                      "cost_info": {
+                        "read_cost": "33.19",
+                        "eval_cost": "3.66",
+                        "prefix_cost": "36.85",
+                        "data_read_per_join": "2K"
+                      },
+                      "used_columns": [
+                        "date_id",
+                        "is_weekend"
+                      ],
+                      "attached_condition": "(`source_db`.`d`.`is_weekend` = 0)"
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "f",
+                      "access_type": "ref",
+                      "possible_keys": [
+                        "idx_fact_pu_date",
+                        "idx_fact_pu_location",
+                        "idx_olap_q3_distance_cover",
+                        "idx_olap_q1_cover"
+                      ],
+                      "key": "idx_fact_pu_date",
+                      "used_key_parts": [
+                        "pu_date_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.d.date_id"
+                      ],
+                      "rows_examined_per_scan": 913,
+                      "rows_produced_per_join": 5572,
+                      "filtered": "16.66",
+                      "cost_info": {
+                        "read_cost": "22274.70",
+                        "eval_cost": "557.21",
+                        "prefix_cost": "25655.15",
+                        "data_read_per_join": "565K"
+                      },
+                      "used_columns": [
+                        "trip_id",
+                        "pu_date_id",
+                        "pu_time_id",
+                        "pu_location_id",
+                        "trip_distance",
+                        "trip_duration_seconds",
+                        "estimated_speed_mph"
+                      ],
+                      "attached_condition": "((`source_db`.`f`.`trip_distance` between 2.00 and 5.00) and (`source_db`.`f`.`trip_duration_seconds` > 0))"
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "l",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "location_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_location_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 5572,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "1393.03",
+                        "eval_cost": "557.21",
+                        "prefix_cost": "27605.39",
+                        "data_read_per_join": "3M"
+                      },
+                      "used_columns": [
+                        "location_id",
+                        "zone",
+                        "borough"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "t",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "time_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_time_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 5572,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "1393.03",
+                        "eval_cost": "557.21",
+                        "prefix_cost": "29555.63",
+                        "data_read_per_join": "522K"
+                      },
+                      "used_columns": [
+                        "time_id",
+                        "hour",
+                        "time_period"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "optimized": {
+        "sql_sha256": "ed0354c91a07e410a86e57fed32248f49a4f3f3fa0f69f476c448c0a20411dac",
+        "traditional": [
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "d",
+            "partitions": null,
+            "type": "ALL",
+            "possible_keys": "PRIMARY",
+            "key": null,
+            "key_len": null,
+            "ref": null,
+            "rows": 366,
+            "filtered": 10.0,
+            "Extra": "Using where; Using temporary; Using filesort"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "f",
+            "partitions": null,
+            "type": "ref",
+            "possible_keys": "idx_fact_pu_date,idx_fact_pu_location,idx_olap_q3_distance_cover,idx_olap_q1_cover",
+            "key": "idx_fact_pu_date",
+            "key_len": "4",
+            "ref": "source_db.d.date_id",
+            "rows": 913,
+            "filtered": 16.66,
+            "Extra": "Using where"
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "l",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_location_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          },
+          {
+            "id": 1,
+            "select_type": "SIMPLE",
+            "table": "t",
+            "partitions": null,
+            "type": "eq_ref",
+            "possible_keys": "PRIMARY",
+            "key": "PRIMARY",
+            "key_len": "4",
+            "ref": "source_db.f.pu_time_id",
+            "rows": 1,
+            "filtered": 100.0,
+            "Extra": null
+          }
+        ],
+        "json": {
+          "query_block": {
+            "select_id": 1,
+            "cost_info": {
+              "query_cost": "29555.63"
+            },
+            "ordering_operation": {
+              "using_filesort": true,
+              "grouping_operation": {
+                "using_temporary_table": true,
+                "using_filesort": false,
+                "nested_loop": [
+                  {
+                    "table": {
+                      "table_name": "d",
+                      "access_type": "ALL",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "rows_examined_per_scan": 366,
+                      "rows_produced_per_join": 36,
+                      "filtered": "10.00",
+                      "cost_info": {
+                        "read_cost": "33.19",
+                        "eval_cost": "3.66",
+                        "prefix_cost": "36.85",
+                        "data_read_per_join": "2K"
+                      },
+                      "used_columns": [
+                        "date_id",
+                        "is_weekend"
+                      ],
+                      "attached_condition": "(`source_db`.`d`.`is_weekend` = 0)"
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "f",
+                      "access_type": "ref",
+                      "possible_keys": [
+                        "idx_fact_pu_date",
+                        "idx_fact_pu_location",
+                        "idx_olap_q3_distance_cover",
+                        "idx_olap_q1_cover"
+                      ],
+                      "key": "idx_fact_pu_date",
+                      "used_key_parts": [
+                        "pu_date_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.d.date_id"
+                      ],
+                      "rows_examined_per_scan": 913,
+                      "rows_produced_per_join": 5572,
+                      "filtered": "16.66",
+                      "cost_info": {
+                        "read_cost": "22274.70",
+                        "eval_cost": "557.21",
+                        "prefix_cost": "25655.15",
+                        "data_read_per_join": "565K"
+                      },
+                      "used_columns": [
+                        "trip_id",
+                        "pu_date_id",
+                        "pu_time_id",
+                        "pu_location_id",
+                        "trip_distance",
+                        "trip_duration_seconds",
+                        "estimated_speed_mph"
+                      ],
+                      "attached_condition": "((`source_db`.`f`.`trip_distance` between 2.00 and 5.00) and (`source_db`.`f`.`trip_duration_seconds` > 0))"
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "l",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "location_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_location_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 5572,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "1393.03",
+                        "eval_cost": "557.21",
+                        "prefix_cost": "27605.39",
+                        "data_read_per_join": "3M"
+                      },
+                      "used_columns": [
+                        "location_id",
+                        "zone",
+                        "borough"
+                      ]
+                    }
+                  },
+                  {
+                    "table": {
+                      "table_name": "t",
+                      "access_type": "eq_ref",
+                      "possible_keys": [
+                        "PRIMARY"
+                      ],
+                      "key": "PRIMARY",
+                      "used_key_parts": [
+                        "time_id"
+                      ],
+                      "key_length": "4",
+                      "ref": [
+                        "source_db.f.pu_time_id"
+                      ],
+                      "rows_examined_per_scan": 1,
+                      "rows_produced_per_join": 5572,
+                      "filtered": "100.00",
+                      "cost_info": {
+                        "read_cost": "1393.03",
+                        "eval_cost": "557.21",
+                        "prefix_cost": "29555.63",
+                        "data_read_per_join": "522K"
+                      },
+                      "used_columns": [
+                        "time_id",
+                        "hour",
+                        "time_period"
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "server": {
+    "version": "8.0.43"
+  },
+  "fact_indexes": [
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 0,
+      "Key_name": "PRIMARY",
+      "Seq_in_index": 1,
+      "Column_name": "trip_id",
+      "Collation": "A",
+      "Cardinality": 0,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "fk_fact_do_time",
+      "Seq_in_index": 1,
+      "Column_name": "do_time_id",
+      "Collation": "A",
+      "Cardinality": 0,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "fk_fact_payment",
+      "Seq_in_index": 1,
+      "Column_name": "payment_id",
+      "Collation": "A",
+      "Cardinality": 0,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "fk_fact_rate_code",
+      "Seq_in_index": 1,
+      "Column_name": "rate_code_id",
+      "Collation": "A",
+      "Cardinality": 0,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_fact_pu_date",
+      "Seq_in_index": 1,
+      "Column_name": "pu_date_id",
+      "Collation": "A",
+      "Cardinality": 0,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_fact_do_date",
+      "Seq_in_index": 1,
+      "Column_name": "do_date_id",
+      "Collation": "A",
+      "Cardinality": 0,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_fact_pu_location",
+      "Seq_in_index": 1,
+      "Column_name": "pu_location_id",
+      "Collation": "A",
+      "Cardinality": 0,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_fact_do_location",
+      "Seq_in_index": 1,
+      "Column_name": "do_location_id",
+      "Collation": "A",
+      "Cardinality": 0,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_olap_q3_distance_cover",
+      "Seq_in_index": 1,
+      "Column_name": "trip_distance",
+      "Collation": "A",
+      "Cardinality": 98782,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "YES",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_olap_q3_distance_cover",
+      "Seq_in_index": 2,
+      "Column_name": "pu_date_id",
+      "Collation": "A",
+      "Cardinality": 595331,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_olap_q3_distance_cover",
+      "Seq_in_index": 3,
+      "Column_name": "pu_location_id",
+      "Collation": "A",
+      "Cardinality": 12351747,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_olap_q3_distance_cover",
+      "Seq_in_index": 4,
+      "Column_name": "pu_time_id",
+      "Collation": "A",
+      "Cardinality": 44623376,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_olap_q3_distance_cover",
+      "Seq_in_index": 5,
+      "Column_name": "trip_duration_seconds",
+      "Collation": "A",
+      "Cardinality": 44623376,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "YES",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_olap_q3_distance_cover",
+      "Seq_in_index": 6,
+      "Column_name": "estimated_speed_mph",
+      "Collation": "A",
+      "Cardinality": 44623376,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "YES",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_olap_q1_cover",
+      "Seq_in_index": 1,
+      "Column_name": "pu_time_id",
+      "Collation": "A",
+      "Cardinality": 75640,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_olap_q1_cover",
+      "Seq_in_index": 2,
+      "Column_name": "pu_date_id",
+      "Collation": "A",
+      "Cardinality": 616466,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    },
+    {
+      "Table": "fact_trip_records",
+      "Non_unique": 1,
+      "Key_name": "idx_olap_q1_cover",
+      "Seq_in_index": 3,
+      "Column_name": "pu_location_id",
+      "Collation": "A",
+      "Cardinality": 19927358,
+      "Sub_part": null,
+      "Packed": null,
+      "Null": "",
+      "Index_type": "BTREE",
+      "Comment": "",
+      "Index_comment": "",
+      "Visible": "YES",
+      "Expression": null
+    }
+  ]
+}

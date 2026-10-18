@@ -1,5 +1,24 @@
 # Student-authored reporting SQL
 
+## Current integration
+
+All seven approved statements are selected directly from the root
+`olap_queries_optimized.sql`, in Q1A–Q3B order, by `dashboard/reports.json`.
+No duplicate SQL files are needed and no analytical SQL was changed. Each entry
+records its 1-based statement number, approved population/grain, source SHA-256,
+and the team's reported benchmark runtime. All seven filter mappings are empty:
+the current SQL has no bind parameters. Display filters are separate group
+selectors, never SQL parameterization.
+
+After a student-approved SQL revision, review the seven output contracts and
+update the registry fingerprint using `dashboard.reports.source_fingerprint`
+on the reviewed file's bytes before execution. It normalizes LF/CRLF only for
+the approval fingerprint so Git checkout line endings do not invalidate approval;
+the selected SQL text is executed unchanged.
+The app refuses a changed file with stale approval metadata. Approval does not
+certify full-data equivalence. Standalone files below remain supported for future
+student-authored replacements with approved bindings.
+
 No analytical SQL is generated here. The dashboard does not execute the root
 `olap_queries.sql` automatically. Its seven statements define these result contracts:
 
@@ -34,7 +53,8 @@ No analytical SQL is generated here. The dashboard does not execute the root
    The application does not append predicates, wrap the statement, add LIMIT, or
    optimize it. All statement parameters must have matching filter bindings.
 5. Select **Warehouse reports**, choose the report, and click **Load warehouse
-   report**. Compare its detailed result and CSV with the teammate's independently
+   report** (cache allowed) or **Refresh from MySQL** (fresh execution).
+   Compare its detailed result and CSV with the teammate's independently
    verified result, including NULLs and rollup rows.
 
 ## Filter contract

@@ -20,6 +20,9 @@ class DatabaseSettings:
     host: str = "localhost"
     port: int = 3306
     database: str = "source_db"
+    connect_timeout: int = 5
+    read_timeout: int = 7200
+    write_timeout: int = 30
 
 
 def database_settings():
@@ -27,6 +30,15 @@ def database_settings():
 
     def setting(name, default=""):
         return values.get("DASHBOARD_" + name) or values.get(name) or default
+
+    def timeout(name, default):
+        try:
+            value = int(values.get("DASHBOARD_" + name, default))
+            if not 1 <= value <= 86400:
+                raise ValueError
+            return value
+        except (ValueError, TypeError):
+            raise ValueError("Dashboard timeouts must be integers between 1 and 86400 seconds") from None
 
     try:
         port = int(setting("DB_PORT", "3306"))
@@ -38,4 +50,7 @@ def database_settings():
         user=setting("DB_USER", "root"), password=setting("DB_PASSWORD"),
         host=setting("DB_HOST", "localhost"), port=port,
         database=setting("DB_NAME", "source_db"),
+        connect_timeout=timeout("CONNECT_TIMEOUT_SECONDS", 5),
+        read_timeout=timeout("READ_TIMEOUT_SECONDS", 7200),
+        write_timeout=timeout("WRITE_TIMEOUT_SECONDS", 30),
     )

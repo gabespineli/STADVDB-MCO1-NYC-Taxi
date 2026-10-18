@@ -33,11 +33,9 @@ def render_saved_filters(report, data, fingerprint):
     prefix = f"snapshot_{report.id}_{fingerprint[:12]}_"
     detail = detail_rows(data)
     selections = {}
-    with st.container(border=True):
-        top, reset = st.columns([4, 1])
-        top.markdown("**Explore these results**")
-        reset.button("Reset view", key=prefix + "reset", width="stretch",
-                     on_click=reset_saved_filters, args=(prefix, report.id))
+    with st.expander("Display filters"):
+        st.button("Reset view", key=prefix + "reset",
+                  on_click=reset_saved_filters, args=(prefix, report.id))
         candidates = [column for column in ("borough", "zone", "time_period", "fare_range", "distance_bucket", "mo") if column in detail]
         columns = st.columns(min(3, max(1, len(candidates))))
         scoped = detail
@@ -60,16 +58,15 @@ def render_saved_filters(report, data, fingerprint):
             with right:
                 hours = st.slider("Pickup hour", 0, 23, (0, 23), key=prefix + "hours")
                 selections["hour"] = list(range(hours[0], hours[1] + 1))
-        st.caption("Filters select existing result groups in this export. They do not rerun SQL or change its population; averages are not combined.")
+        st.caption("Selects returned groups only; does not rerun SQL.")
     return filter_saved_rows(data, selections, minimum), {key: value for key, value in selections.items() if value is not None}, minimum
 
 
 def render_filters(report, config, readiness, enabled):
     bindings = config.get("filters", {}) if enabled else {}
     if not bindings:
-        if enabled:
-            return st.button("Load warehouse report", type="primary"), {}
-        return False, {}
+        return st.button("Load warehouse report", type="primary", disabled=not enabled,
+                         help="Reuses matching results cached for 24 hours; otherwise runs the query. Keep the laptop awake during execution."), {}
     locations = readiness.get("locations", [])
     boroughs = sorted({row["borough"] for row in locations if row["borough"]})
     zones = sorted({row["zone"] for row in locations if row["zone"]})

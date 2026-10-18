@@ -1,6 +1,7 @@
 """Result contracts taken from olap_queries.sql; no analytical SQL is authored here."""
 
 import json
+import hashlib
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -86,13 +87,28 @@ def approved_sql(report, config):
     filename = config.get("sql_file", "")
     if not isinstance(filename, str):
         raise ValueError("Report SQL filename must be a string")
-    path = (query_root / filename).resolve()
-    if path.parent != query_root or path.suffix.lower() != ".sql":
-        raise ValueError("Report SQL must be a .sql file directly inside dashboard/queries")
-    try:
-        sql = path.read_text(encoding="utf-8-sig")
-    except OSError:
-        raise ValueError("The approved SQL file has not been added to dashboard/queries") from None
+    if filename == "olap_queries_optimized.sql":
+        # Select a verbatim statement from the team's single authoritative file.
+        # No copying, predicate injection, wrapping, or query rewriting.
+        try:
+            payload = (HERE.parent / filename).read_bytes()
+            if source_fingerprint(payload) != config.get("source_sha256"):
+                raise ValueError("The approved SQL file changed. Ask the team to review its registry fingerprint before running it")
+            statements = split_statements(payload.decode("utf-8-sig"))
+            number = config.get("statement")
+            if type(number) is not int or len(statements) != 7 or not 1 <= number <= 7:
+                raise ValueError("The optimized SQL registry must select one of seven statements")
+            sql = statements[number - 1]
+        except (OSError, UnicodeError):
+            raise ValueError("The approved optimized SQL file is unavailable") from None
+    else:
+        path = (query_root / filename).resolve()
+        if path.parent != query_root or path.suffix.lower() != ".sql":
+            raise ValueError("Report SQL must be a .sql file directly inside dashboard/queries")
+        try:
+            sql = path.read_text(encoding="utf-8-sig")
+        except OSError:
+            raise ValueError("The approved SQL file has not been added to dashboard/queries") from None
     validate_read_only_sql(sql)
     filters = config.get("filters", {})
     if not isinstance(filters, dict) or set(filters) - FILTER_NAMES:
@@ -107,6 +123,26 @@ def approved_sql(report, config):
     if set(text(sql).compile().params) != set(filters.values()):
         raise ValueError("SQL bind parameters must exactly match the approved filter bindings")
     return sql
+
+
+def source_fingerprint(payload):
+    # Git may check out LF or CRLF. Normalize line endings only for approval
+    # comparison; execution still receives the original selected text.
+    return hashlib.sha256(payload.decode("utf-8-sig").replace("\r\n", "\n").encode("utf-8")).hexdigest()
+
+
+def split_statements(source):
+    """Split trusted SQL at delimiters outside quotes/comments, retaining SQL text."""
+    tokens = r"'(?:''|\\.|[^'\\])*'|\"(?:\"\"|\\.|[^\"\\])*\"|`(?:``|[^`])*`|--[^\n]*|\#[^\n]*|/\*.*?\*/|;"
+    statements, start = [], 0
+    for match in re.finditer(tokens, source, re.S):
+        if match.group() == ";":
+            statements.append(source[start:match.end()].strip())
+            start = match.end()
+    trailing = source[start:].strip()
+    if re.sub(r"/\*.*?\*/|--[^\n]*|\#[^\n]*", "", trailing, flags=re.S).strip():
+        statements.append(trailing)
+    return statements
 
 
 def validate_read_only_sql(sql):
@@ -166,6 +202,8 @@ def live_blockers(report, readiness):
     problems = []
     if not readiness.get("connected"):
         return ["MySQL connection is unavailable"]
+    if readiness.get("read_only_account") is False:
+        problems.append("Configure a dedicated SELECT-only dashboard login before running live reports. The current account is not verified as read-only")
     if (readiness.get("error") or set(readiness["tables"]) != set(WAREHOUSE_TABLES)
             or any(value != "Has records" for value in readiness["tables"].values())):
         problems.append("All six warehouse tables must exist and contain records")

@@ -17,7 +17,7 @@ from dashboard.sample_data import sample_result
 def ready_state():
     return {"connected": True, "tables": {name: "Has records" for name in WAREHOUSE_TABLES},
             "time_periods": ["Late Night", "Morning Rush", "Evening Rush"],
-            "locations": [], "placeholder_locations": False}
+            "locations": [], "placeholder_locations": False, "read_only_account": True}
 
 
 class ReportContractTests(unittest.TestCase):
@@ -52,10 +52,18 @@ class ReportContractTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     reports.validate_read_only_sql(sql)
 
-    def test_unapproved_registry_entries_cannot_load_sql(self):
+    def test_registered_queries_are_exact_approved_statements_and_unapproved_stays_blocked(self):
+        source = (ROOT / "olap_queries_optimized.sql").read_bytes()
+        statements = reports.split_statements(source.decode("utf-8-sig"))
         for report in reports.REPORTS:
+            config = reports.report_config(report.id)
+            self.assertEqual(config["source_sha256"], reports.source_fingerprint(source))
+            self.assertEqual(reports.approved_sql(report, config), statements[config["statement"] - 1])
+            self.assertEqual(config["filters"], {})
             with self.assertRaisesRegex(ValueError, "waiting for validated"):
-                reports.approved_sql(report, reports.report_config(report.id))
+                reports.approved_sql(report, {**config, "validated": False})
+            with self.assertRaisesRegex(ValueError, "file changed"):
+                reports.approved_sql(report, {**config, "source_sha256": "changed"})
 
     def test_approved_file_uses_original_statement_and_checks_all_bindings(self):
         original = (ROOT / "olap_queries.sql").read_text().split(";")[0]
@@ -134,7 +142,7 @@ class DatabaseTests(unittest.TestCase):
         locations.mappings.return_value = [{"location_id": 1, "zone": "Zone 1", "borough": "Unknown"}]
         found = MagicMock()
         found.first.return_value = (1,)
-        connection.execute.side_effect = [MagicMock(), existing] + [found] * 6 + [periods, locations]
+        connection.execute.side_effect = [MagicMock(), [("GRANT SELECT ON db.* TO 'reader'@'localhost'",)], existing] + [found] * 6 + [periods, locations]
         with patch.object(db, "read_connection", return_value=nullcontext(connection)):
             state = db.warehouse_readiness.__wrapped__(DatabaseSettings("test", "secret"))
         self.assertTrue(state["connected"])
@@ -147,7 +155,7 @@ class DatabaseTests(unittest.TestCase):
         result = connection.execution_options.return_value.execute.return_value.__enter__.return_value
         result.keys.return_value = ["value"]
         result.fetchmany.return_value = [(1,), (2,), (3,), (4,)]
-        with patch.object(db, "MAX_REPORT_ROWS", 3), patch.object(db, "read_connection", return_value=nullcontext(connection)):
+        with patch.object(db, "MAX_REPORT_ROWS", 3), patch.object(db, "verified_read_only_account", return_value=True), patch.object(db, "read_connection", return_value=nullcontext(connection)):
             with self.assertRaisesRegex(ValueError, "exceeds 3"):
                 db.run_report.__wrapped__(DatabaseSettings("test", "secret"), "diagnostic", "SELECT 1", {})
         self.assertEqual(str(connection.execution_options.return_value.execute.call_args.args[0]), "SELECT 1")
@@ -173,13 +181,13 @@ class DashboardAppTests(unittest.TestCase):
                 self.assertGreater(len(app.get("plotly_chart")), 0)
                 self.assertFalse(any(widget.label == "Month" for widget in app.selectbox))
 
-    def test_warehouse_mode_does_not_execute_unapproved_reports_or_show_samples(self):
+    def test_warehouse_mode_does_not_execute_on_startup_or_show_samples(self):
         with patch.object(db, "run_report") as execute:
             app = self.start()
             app.sidebar.radio[1].set_value("Warehouse reports").run()
             self.assertEqual(len(app.exception), 0)
             self.assertEqual(len(app.get("plotly_chart")), 0)
-            self.assertTrue(any("not ready" in info.value for info in app.info))
+            self.assertTrue(any("Load warehouse report" in info.value for info in app.info))
             execute.assert_not_called()
 
     def test_connection_failure_keeps_sample_preview_available(self):

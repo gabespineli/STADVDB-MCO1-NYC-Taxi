@@ -47,7 +47,6 @@ def render_charts(report_id, data, sample):
         show(px.bar(top, x="total_filtered_pickups", y="zone", color="borough", orientation="h",
                     title="Top 20 zones · weekend or late-night pickups", labels={"total_filtered_pickups": "Pickups", "zone": ""},
                     color_discrete_sequence=COLORS, height=max(360, min(760, len(top) * 30))), sample, report_id + "_zones")
-        st.caption("The zone chart shows up to 20 groups by pickup count. All filtered detail groups contribute to the borough comparison and result table.")
         counts = ["weekday_late_night_pickups", "weekend_late_night_pickups", "all_weekend_pickups"]
         grouped = detail.groupby("borough", as_index=False)[counts].sum(min_count=1)
         melted = grouped.melt(id_vars="borough", var_name="Measure", value_name="Pickups")
@@ -109,7 +108,7 @@ def render_charts(report_id, data, sample):
             hidden = int((scatter[axis].le(0) | scatter[axis].isna()).sum())
             scatter = scatter[scatter[axis] > 0]
             if hidden:
-                st.caption(f"{hidden:,} groups with zero or missing values cannot appear on the logarithmic chart; they remain in the result table.")
+                st.caption(f"{hidden:,} zero/NULL groups omitted from the log chart only.")
         if scatter.empty:
             st.info("No plottable values for this scale. Switch off the logarithmic scale or change the filters.")
             return
@@ -119,4 +118,4 @@ def render_charts(report_id, data, sample):
                         labels={"avg_distance_miles": "Mean distance (miles)", "avg_duration_minutes": "Mean duration (minutes)",
                                 "avg_speed_mph": "Mean estimated speed (mph)"}, color_discrete_sequence=COLORS,
                         size_max=32, opacity=0.65, height=500), sample, report_id)
-        st.caption("Each point is an existing zone × pickup hour × time-period group. Bubble size represents trips. Hover to inspect a group; use the legend to focus on a borough.")
+        st.caption("Each bubble: zone × hour × period. Size: trip count.")

@@ -231,10 +231,16 @@ and should only be run once for missing indexes, separately from report executio
 
 See [OLAP_OPTIMIZATION.md](OLAP_OPTIMIZATION.md) for the per-query changes,
 Workbench/MySQL commands, completed read-only checks, and storage precautions.
-No full-data benchmark or speedup is claimed. The removed `reports/` runner is
-not required and has not been recreated. Dashboard approval flags remain unchanged.
+The removed `reports/` runner is not required and has not been recreated.
+The dashboard now connects all seven team-approved statements unchanged.
+Team-supplied benchmark runtimes appear in its registry.
 
 ## Analytics dashboard (Streamlit)
+
+**Current integration:** all seven completed optimized statements are connected.
+See **[dashboard/RUNNING.md](dashboard/RUNNING.md)** for current startup,
+read-only account, long-query caching, and ngrok instructions, and
+[dashboard/VERIFICATION.md](dashboard/VERIFICATION.md) for checks and limitations.
 
 The dashboard is a separate presentation layer in `dashboard/`. It does not modify
 or run the raw importer, schema, ETL scripts, or root `olap_queries.sql`.
@@ -265,9 +271,10 @@ If port 8501 is already occupied, use
 - Read-only MySQL connectivity and warehouse availability checks, using table
   metadata and `LIMIT 1` checks on the six fixed warehouse tables. No raw trip
   records or expensive full-table counts are used to test connectivity.
-- Cached engines, 60-second availability checks, and five-minute report results.
+- Cached engines, 60-second availability checks, and 24-hour report results.
   Analytical reports run only after the user selects Load warehouse report. The
-  database has a five-second connection timeout and a 30-second socket read timeout;
+  database defaults to a five-second connection timeout and a configurable
+  7,200-second socket read timeout;
   the latter is not a guaranteed server-side query execution deadline.
 - Graceful unavailable, missing-table, empty-result, and query-error states. A live
   failure or empty result never silently becomes sample data.
@@ -276,7 +283,7 @@ If port 8501 is already occupied, use
 
 The default **Saved exports** mode reads completed aggregate reports from
 `dashboard/exports/` without connecting to MySQL. It opens an available report first
-(currently Q3 location efficiency). Your teammate can execute queries separately;
+when a complete export exists. Your teammate can execute queries separately;
 copy each final timestamped TSV and its matching SUCCESS log into that folder,
 then choose **Refresh saved results**. Follow the filename, column, and completion
 metadata format in [dashboard/exports/README.md](dashboard/exports/README.md).
@@ -308,8 +315,9 @@ For a separate warehouse schema or a dedicated SELECT-only login, optionally set
 `DASHBOARD_DB_NAME`, `DASHBOARD_DB_USER`, `DASHBOARD_DB_PASSWORD`,
 `DASHBOARD_DB_HOST`, and `DASHBOARD_DB_PORT`. Each override falls back to its
 corresponding existing setting; there is no automatic database creation or migration.
-Have your database administrator provision a SELECT-only account for presentation
-use; do not grant raw-table access to that account if it is unnecessary.
+Have your database administrator provision a dedicated account with direct
+SELECT-only grants on the warehouse tables. Live execution refuses root and
+unverified privileges; no users or grants are created automatically.
 
 All reads execute in MySQL read-only transactions. Trusted local report SQL also
 passes a conservative single-statement/warehouse-table guard. This is not a SQL
@@ -317,11 +325,12 @@ sandbox or a substitute for account privileges. No database credentials or origi
 driver exceptions are rendered in the UI. `.env` remains Git-ignored. No tokens or
 passwords belong in `reports.json`, SQL files, or downloaded CSVs.
 
-### What is waiting for your teammates
+### Approved SQL and parameter scope
 
-All seven report entries start with `validated: false`. The live-report interface
-remains blocked until the warehouse tables contain records and the OLAP teammate
-supplies and approves the corresponding aggregated SQL. Reports that depend on
+All seven entries now select their approved statement directly from the unchanged
+root `olap_queries_optimized.sql`, with a file fingerprint, population, grain, and
+team-supplied runtime. The live-report interface requires a verified SELECT-only
+account and populated warehouse tables. Reports that depend on
 late-night/rush-hour classifications or real geography also check those prerequisites.
 
 Borough, zone, month/date range, time period, fare range, distance category, and
@@ -329,14 +338,16 @@ aggregation controls are prepared for live SQL integration; they are hidden unti
 a report has approved bindings. Saved-export controls are separate and only select
 existing result groups. Sample previews do not pretend SQL filters are implemented.
 
-Follow **[dashboard/queries/README.md](dashboard/queries/README.md)** to integrate
-the seven student-authored statements. Put one finalized statement in each named
-file in `dashboard/queries/`, preserving its result aliases, and approve its
-population, grain, aggregated status, and supported filter bindings in
-`dashboard/reports.json`. No analytical SQL has been generated for this setup.
+The seven current statements contain no bind parameters. Database population
+filters and alternate aggregation levels therefore require student-authored SQL
+changes before they can be enabled. Separate display controls only select returned
+groups. Follow **[dashboard/queries/README.md](dashboard/queries/README.md)** for
+future team-approved revisions. No analytical SQL was generated or modified.
 
 Use **Refresh database status** after warehouse changes. To refresh report data,
-select Load warehouse report again; identical requests can use the five-minute cache.
+select Load warehouse report again; identical requests can use the 24-hour cache.
+Use Refresh from MySQL for an explicit fresh execution. Chart interactions do not
+execute SQL, and only one expensive report runs at a time in this app process.
 Restart Streamlit after changing database credentials or environment configuration.
 
 ### Sharing later through ngrok
