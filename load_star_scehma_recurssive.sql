@@ -91,6 +91,13 @@ WHERE DOLocationID IS NOT NULL;
 
 -- 1.5 dim_date (Populate unique pickup & dropoff dates)
 INSERT IGNORE INTO dim_date (date_id, `date`, is_weekend, day_of_week, `month`, `quarter`, `year`)
+WITH RECURSIVE calendar AS (
+    SELECT CAST('2024-01-01' AS DATE) AS dt
+    UNION ALL
+    SELECT DATE_ADD(dt, INTERVAL 1 DAY)
+    FROM calendar
+    WHERE dt < '2026-12-31'
+)
 SELECT 
     CAST(DATE_FORMAT(dt, '%Y%m%d') AS SIGNED) AS date_id,
     dt AS `date`,
@@ -99,84 +106,107 @@ SELECT
     MONTH(dt) AS `month`,
     QUARTER(dt) AS `quarter`,
     YEAR(dt) AS `year`
-FROM (
-    SELECT DISTINCT DATE(tpep_pickup_datetime) AS dt 
-    FROM yellow_taxi_trips 
-    WHERE tpep_pickup_datetime IS NOT NULL
-    UNION
-    SELECT DISTINCT DATE(tpep_dropoff_datetime) AS dt 
-    FROM yellow_taxi_trips 
-    WHERE tpep_dropoff_datetime IS NOT NULL
-) AS unique_dates;
+FROM calendar;
 
 -- =====================================================================
--- STEP 2: Populate fact_trip_records
+-- STEP 2: Populate fact_trip_records in Batches (Prevents Error 1206)
 -- =====================================================================
 
-INSERT INTO fact_trip_records (
-    pu_date_id,
-    do_date_id,
-    pu_time_id,
-    do_time_id,
-    pu_location_id,
-    do_location_id,
-    payment_id,
-    rate_code_id,
-    trip_distance,
-    fare_amount,
-    extra,
-    mta_tax,
-    tip_amount,
-    tolls_amount,
-    improvement_surcharge,
-    total_amount,
-    airport_fee,
-    cbd_congestion_fee,
-    trip_duration_seconds,
-    estimated_speed_mph
-)
-SELECT 
-    -- Date IDs (format: YYYYMMDD)
-    CAST(DATE_FORMAT(tpep_pickup_datetime, '%Y%m%d') AS SIGNED) AS pu_date_id,
-    CAST(DATE_FORMAT(tpep_dropoff_datetime, '%Y%m%d') AS SIGNED) AS do_date_id,
-    
-    -- Time IDs (format: minute of day, 0 to 1439)
-    (HOUR(tpep_pickup_datetime) * 60 + MINUTE(tpep_pickup_datetime)) AS pu_time_id,
-    (HOUR(tpep_dropoff_datetime) * 60 + MINUTE(tpep_dropoff_datetime)) AS do_time_id,
-    
-    -- Locations
-    COALESCE(PULocationID, 0) AS pu_location_id,
-    COALESCE(DOLocationID, 0) AS do_location_id,
-    
-    -- Payment & Rate Code
-    COALESCE(payment_type, 0) AS payment_id,
-    COALESCE(CAST(RatecodeID AS SIGNED), 0) AS rate_code_id,
-    
-    -- Metrics
-    COALESCE(trip_distance, 0.00),
-    COALESCE(fare_amount, 0.00),
-    COALESCE(extra, 0.00),
-    COALESCE(mta_tax, 0.00),
-    COALESCE(tip_amount, 0.00),
-    COALESCE(tolls_amount, 0.00),
-    COALESCE(improvement_surcharge, 0.00),
-    COALESCE(total_amount, 0.00),
-    COALESCE(Airport_fee, 0.00),
-    COALESCE(cbd_congestion_fee, 0.00),
-    
-    -- Derived: / trip_duration_seconds
-    TIMESTAMPDIFF(SECOND, tpep_pickup_datetime, tpep_dropoff_datetime) AS trip_duration_seconds,
-    
-    -- Derived: / estimated_speed_mph
-    CASE 
-        WHEN TIMESTAMPDIFF(SECOND, tpep_pickup_datetime, tpep_dropoff_datetime) > 0 
-        THEN ROUND(COALESCE(trip_distance, 0) / (TIMESTAMPDIFF(SECOND, tpep_pickup_datetime, tpep_dropoff_datetime) / 3600.0), 2)
-        ELSE 0.00 
-    END AS estimated_speed_mph
-FROM yellow_taxi_trips
-WHERE tpep_pickup_datetime IS NOT NULL 
-  AND tpep_dropoff_datetime IS NOT NULL;
+DROP PROCEDURE IF EXISTS LoadFactTripsBatched;
 
--- Re-enable constraints
-SET FOREIGN_KEY_CHECKS = 1;
-SET UNIQUE_CHECKS = 1;
+DELIMITER $$
+
+CREATE PROCEDURE LoadFactTripsBatched(IN batch_size INT)
+BEGIN
+    DECLARE total_rows BIGINT DEFAULT 0;
+    DECLARE offset_val BIGINT DEFAULT 0;
+    
+    SET FOREIGN_KEY_CHECKS = 0;
+    SET UNIQUE_CHECKS = 0;
+    
+    SELECT COUNT(*) INTO total_rows 
+    FROM yellow_taxi_trips
+    WHERE tpep_pickup_datetime IS NOT NULL 
+      AND tpep_dropoff_datetime IS NOT NULL;
+    
+    WHILE offset_val < total_rows DO
+        INSERT INTO fact_trip_records (
+            pu_date_id,
+            do_date_id,
+            pu_time_id,
+            do_time_id,
+            pu_location_id,
+            do_location_id,
+            payment_id,
+            rate_code_id,
+            trip_distance,
+            fare_amount,
+            extra,
+            mta_tax,
+            tip_amount,
+            tolls_amount,
+            improvement_surcharge,
+            total_amount,
+            airport_fee,
+            cbd_congestion_fee,
+            trip_duration_seconds,
+            estimated_speed_mph
+        )
+        SELECT 
+            -- Date IDs (format: YYYYMMDD)
+            CAST(DATE_FORMAT(tpep_pickup_datetime, '%Y%m%d') AS SIGNED) AS pu_date_id,
+            CAST(DATE_FORMAT(tpep_dropoff_datetime, '%Y%m%d') AS SIGNED) AS do_date_id,
+            
+            -- Time IDs (format: minute of day, 0 to 1439)
+            (HOUR(tpep_pickup_datetime) * 60 + MINUTE(tpep_pickup_datetime)) AS pu_time_id,
+            (HOUR(tpep_dropoff_datetime) * 60 + MINUTE(tpep_dropoff_datetime)) AS do_time_id,
+            
+            -- Locations
+            COALESCE(PULocationID, 0) AS pu_location_id,
+            COALESCE(DOLocationID, 0) AS do_location_id,
+            
+            -- Payment & Rate Code
+            COALESCE(payment_type, 0) AS payment_id,
+            COALESCE(CAST(RatecodeID AS SIGNED), 0) AS rate_code_id,
+            
+            -- Metrics
+            COALESCE(trip_distance, 0.00),
+            COALESCE(fare_amount, 0.00),
+            COALESCE(extra, 0.00),
+            COALESCE(mta_tax, 0.00),
+            COALESCE(tip_amount, 0.00),
+            COALESCE(tolls_amount, 0.00),
+            COALESCE(improvement_surcharge, 0.00),
+            COALESCE(total_amount, 0.00),
+            COALESCE(Airport_fee, 0.00),
+            COALESCE(cbd_congestion_fee, 0.00),
+            
+            -- Derived: trip_duration_seconds
+            TIMESTAMPDIFF(SECOND, tpep_pickup_datetime, tpep_dropoff_datetime) AS trip_duration_seconds,
+            
+            -- Derived: estimated_speed_mph
+            CASE 
+                WHEN TIMESTAMPDIFF(SECOND, tpep_pickup_datetime, tpep_dropoff_datetime) > 0 
+                THEN ROUND(COALESCE(trip_distance, 0) / (TIMESTAMPDIFF(SECOND, tpep_pickup_datetime, tpep_dropoff_datetime) / 3600.0), 2)
+                ELSE 0.00 
+            END AS estimated_speed_mph
+        FROM yellow_taxi_trips
+        WHERE tpep_pickup_datetime IS NOT NULL 
+          AND tpep_dropoff_datetime IS NOT NULL
+        LIMIT batch_size OFFSET offset_val;
+
+        COMMIT;
+        SET offset_val = offset_val + batch_size;
+    END WHILE;
+    
+    SET FOREIGN_KEY_CHECKS = 1;
+    SET UNIQUE_CHECKS = 1;
+END$$
+
+DELIMITER ;
+
+-- Execute the batch loader (100,000 rows per batch commit)
+CALL LoadFactTripsBatched(100000);
+
+-- Clean up stored procedure
+DROP PROCEDURE IF EXISTS LoadFactTripsBatched;
