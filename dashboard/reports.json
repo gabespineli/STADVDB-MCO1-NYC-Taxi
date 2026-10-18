@@ -1,0 +1,9 @@
+{
+  "q1_demand": {"validated": false, "aggregated": false, "sql_file": "q1_demand.sql", "population": "", "grain": "", "filters": {}},
+  "q1_hourly": {"validated": false, "aggregated": false, "sql_file": "q1_hourly.sql", "population": "", "grain": "", "filters": {}},
+  "q1_monthly": {"validated": false, "aggregated": false, "sql_file": "q1_monthly.sql", "population": "", "grain": "", "filters": {}},
+  "q2_fare": {"validated": false, "aggregated": false, "sql_file": "q2_fare.sql", "population": "", "grain": "", "filters": {}},
+  "q2_payment": {"validated": false, "aggregated": false, "sql_file": "q2_payment.sql", "population": "", "grain": "", "filters": {}},
+  "q3_comparison": {"validated": false, "aggregated": false, "sql_file": "q3_comparison.sql", "population": "", "grain": "", "filters": {}},
+  "q3_location": {"validated": false, "aggregated": false, "sql_file": "q3_location.sql", "population": "", "grain": "", "filters": {}}
+}

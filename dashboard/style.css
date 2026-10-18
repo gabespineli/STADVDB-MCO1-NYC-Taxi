@@ -1,0 +1,6 @@
+.block-container { max-width: 1480px; padding-top: 2rem; padding-bottom: 3rem; }
+body [data-testid="stMain"] h1 { font-size: clamp(1.65rem, 3vw, 2.6rem); letter-spacing: -0.035em; }
+body [data-testid="stMain"] h2 { font-size: 1.4rem; letter-spacing: -0.02em; }
+[data-testid="stSidebar"] { border-right: 1px solid #dfe4ea; }
+[data-testid="stPlotlyChart"] { border-bottom: 1px solid #e2e7ed; padding-bottom: 1rem; }
+@media (max-width: 640px) { .block-container { padding: 1rem; } }

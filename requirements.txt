@@ -4,3 +4,5 @@ SQLAlchemy
 pymysql
 python-dotenv
 tqdm
+streamlit>=1.50,<2
+plotly>=5.24,<7

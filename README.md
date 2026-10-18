@@ -91,3 +91,111 @@ After those checks, run `python load_parquet_to_mysql.py` to process all monthly
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+## Analytics dashboard (Streamlit)
+
+The dashboard is a separate presentation layer in `dashboard/`. It does not modify
+or run the raw importer, schema, ETL scripts, or root `olap_queries.sql`.
+
+From this repository directory on Windows:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m streamlit run dashboard/app.py
+```
+
+Open **http://127.0.0.1:8501**. Streamlit and Plotly are the only new direct Python
+dependencies. Recent Streamlit releases require a newer Python than the importer's
+Python 3.9 minimum; Python **3.10+** is recommended for the dashboard (tested here
+with Python 3.14). Run the command in your existing environment if it is compatible.
+
+If port 8501 is already occupied, use
+`python -m streamlit run dashboard/app.py --server.port 8502` and open
+**http://127.0.0.1:8502** instead. Use that same port in any later ngrok command.
+
+### What works now
+
+- Separate Q1 demand, Q2 payment/fare, and Q3 travel-efficiency sections, with seven
+  report views matching the existing OLAP output aliases.
+- Plotly charts, detailed aggregated result tables, classified CSV downloads, and
+  prominent synthetic-sample labels. Sample reports are independent UI fixtures;
+  they are not actual NYC findings or an approved time-classification policy.
+- Read-only MySQL connectivity and warehouse availability checks, using table
+  metadata and `LIMIT 1` checks on the six fixed warehouse tables. No raw trip
+  records or expensive full-table counts are used to test connectivity.
+- Cached engines, 60-second availability checks, and five-minute report results.
+  Analytical reports run only after the user selects Load warehouse report. The
+  database has a five-second connection timeout and a 30-second socket read timeout;
+  the latter is not a guaranteed server-side query execution deadline.
+- Graceful unavailable, missing-table, empty-result, and query-error states. A live
+  failure or empty result never silently becomes sample data.
+
+### Database configuration and safety
+
+The app reads the repository-root `.env` and existing `DB_USER`, `DB_PASSWORD`,
+`DB_HOST`, `DB_PORT`, and `DB_NAME` settings. `DB_TABLE` is intentionally unused:
+raw source tables and benchmark tables are not dashboard reporting inputs.
+
+For a separate warehouse schema or a dedicated SELECT-only login, optionally set
+`DASHBOARD_DB_NAME`, `DASHBOARD_DB_USER`, `DASHBOARD_DB_PASSWORD`,
+`DASHBOARD_DB_HOST`, and `DASHBOARD_DB_PORT`. Each override falls back to its
+corresponding existing setting; there is no automatic database creation or migration.
+Have your database administrator provision a SELECT-only account for presentation
+use; do not grant raw-table access to that account if it is unnecessary.
+
+All reads execute in MySQL read-only transactions. Trusted local report SQL also
+passes a conservative single-statement/warehouse-table guard. This is not a SQL
+sandbox or a substitute for account privileges. No database credentials or original
+driver exceptions are rendered in the UI. `.env` remains Git-ignored. No tokens or
+passwords belong in `reports.json`, SQL files, or downloaded CSVs.
+
+### What is waiting for your teammates
+
+All seven report entries start with `validated: false`. The live-report interface
+remains blocked until the warehouse tables contain records and the OLAP teammate
+supplies and approves the corresponding aggregated SQL. Reports that depend on
+late-night/rush-hour classifications or real geography also check those prerequisites.
+
+Borough, zone, month/date range, time period, fare range, distance category, and
+aggregation controls are prepared but disabled until a report has approved SQL
+bindings for them. Sample previews do not pretend those filters are implemented.
+
+Follow **[dashboard/queries/README.md](dashboard/queries/README.md)** to integrate
+the seven student-authored statements. Put one finalized statement in each named
+file in `dashboard/queries/`, preserving its result aliases, and approve its
+population, grain, aggregated status, and supported filter bindings in
+`dashboard/reports.json`. No analytical SQL has been generated for this setup.
+
+Use **Refresh database status** after warehouse changes. To refresh report data,
+select Load warehouse report again; identical requests can use the five-minute cache.
+Restart Streamlit after changing database credentials or environment configuration.
+
+### Sharing later through ngrok
+
+The app binds to localhost by default. Nothing automatically opens a public tunnel.
+Install the [official ngrok CLI](https://ngrok.com/docs/start) separately, complete its account/token setup locally,
+and, only when you are ready to share, leave Streamlit running and run this in a
+second terminal:
+
+```powershell
+ngrok http 8501
+```
+
+Share the forwarding HTTPS URL and stop the ngrok process when the presentation
+ends. Ngrok is not a required Python library. Keep Streamlit's default CORS/XSRF
+protections enabled. Anyone with an unrestricted tunnel URL can view the dashboard;
+use ngrok access controls if the audience must be restricted. No tunnel was started
+as part of this setup.
+
+### Dashboard code map
+
+| Location | Responsibility |
+| --- | --- |
+| `dashboard/app.py` | Navigation, source mode, report loading, and visible status |
+| `dashboard/config.py`, `dashboard/db.py` | Environment settings, read-only connections, lightweight checks, cached query execution |
+| `dashboard/reports.py`, `dashboard/reports.json` | Seven output contracts, validation flags, and approved parameter mappings |
+| `dashboard/filters.py`, `dashboard/charts.py` | Reusable controls and Plotly views |
+| `dashboard/sections/` | Q1, Q2, Q3, and shared result/table/export presentation |
+| `dashboard/sample_data.py` | Explicitly synthetic result fixtures |
+| `dashboard/queries/README.md` | OLAP integration handoff; no generated analytical SQL |
+| `.streamlit/config.toml`, `dashboard/style.css` | Local binding, telemetry preference, and presentation styling |
