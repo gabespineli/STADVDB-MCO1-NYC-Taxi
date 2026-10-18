@@ -220,6 +220,20 @@ grammar. They do not create schema objects or perform inserts. A complete stored
 procedure execution/rollback rehearsal and production-sized timing remain separate
 validation steps; no full warehouse import is automated by tests.
 
+## Optimized OLAP candidates
+
+The unchanged baseline remains in `olap_queries.sql`. Seven candidates in the
+same order are provided in [olap_queries_optimized.sql](olap_queries_optimized.sql).
+Statements 2–6 use query reformulation; statements 1 and 7 retain the original SQL
+and use optional covering indexes from [olap_indexes.sql](olap_indexes.sql).
+Neither index is created automatically. Index creation needs additional disk space
+and should only be run once for missing indexes, separately from report execution.
+
+See [OLAP_OPTIMIZATION.md](OLAP_OPTIMIZATION.md) for the per-query changes,
+Workbench/MySQL commands, completed read-only checks, and storage precautions.
+No full-data benchmark or speedup is claimed. The removed `reports/` runner is
+not required and has not been recreated. Dashboard approval flags remain unchanged.
+
 ## Analytics dashboard (Streamlit)
 
 The dashboard is a separate presentation layer in `dashboard/`. It does not modify
