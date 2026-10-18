@@ -5,10 +5,71 @@ from datetime import date
 import streamlit as st
 
 from dashboard.sample_data import DISTANCES
+from dashboard.charts import detail_rows
+
+
+def filter_saved_rows(data, selections, minimum_trips=1):
+    """Select existing aggregate groups; never recompute or average their rates."""
+    result = detail_rows(data)
+    for column, value in selections.items():
+        if value is not None:
+            result = result[result[column].isin(value) if isinstance(value, list) else result[column].eq(value)]
+    if "trip_count" in result:
+        result = result[result.trip_count >= minimum_trips]
+    return result
+
+
+def reset_saved_filters(prefix, report_id):
+    # Assign defaults in a callback so browser widgets and data reset together.
+    for column in ("borough", "zone", "time_period", "fare_range", "distance_bucket", "mo"):
+        st.session_state[prefix + column] = None
+    st.session_state[prefix + "minimum"] = 1
+    st.session_state[prefix + "hours"] = (0, 23)
+    st.session_state[report_id + "_measure"] = "Trip duration"
+    st.session_state[report_id + "_log"] = False
+
+
+def render_saved_filters(report, data, fingerprint):
+    prefix = f"snapshot_{report.id}_{fingerprint[:12]}_"
+    detail = detail_rows(data)
+    selections = {}
+    with st.container(border=True):
+        top, reset = st.columns([4, 1])
+        top.markdown("**Explore these results**")
+        reset.button("Reset view", key=prefix + "reset", width="stretch",
+                     on_click=reset_saved_filters, args=(prefix, report.id))
+        candidates = [column for column in ("borough", "zone", "time_period", "fare_range", "distance_bucket", "mo") if column in detail]
+        columns = st.columns(min(3, max(1, len(candidates))))
+        scoped = detail
+        names = {"borough": "Borough", "zone": "Taxi zone", "time_period": "Time period",
+                 "fare_range": "Fare range", "distance_bucket": "Distance category", "mo": "Month"}
+        for index, column in enumerate(candidates):
+            options = sorted(scoped[column].dropna().unique().tolist(), key=str)
+            with columns[index % len(columns)]:
+                value = st.selectbox(names[column], [None] + options,
+                                     format_func=lambda value: "All" if value is None else str(value), key=prefix + column)
+            selections[column] = value
+            if value is not None:
+                scoped = scoped[scoped[column].eq(value)]
+        minimum = 1
+        if report.id == "q3_location":
+            left, right = st.columns(2)
+            with left:
+                minimum = st.selectbox("Minimum trips per result group", [1, 10, 30, 100, 1000],
+                                       key=prefix + "minimum", help="Hides small groups in this view only. The source export is unchanged.")
+            with right:
+                hours = st.slider("Pickup hour", 0, 23, (0, 23), key=prefix + "hours")
+                selections["hour"] = list(range(hours[0], hours[1] + 1))
+        st.caption("Filters select existing result groups in this export. They do not rerun SQL or change its population; averages are not combined.")
+    return filter_saved_rows(data, selections, minimum), {key: value for key, value in selections.items() if value is not None}, minimum
 
 
 def render_filters(report, config, readiness, enabled):
     bindings = config.get("filters", {}) if enabled else {}
+    if not bindings:
+        if enabled:
+            return st.button("Load warehouse report", type="primary"), {}
+        return False, {}
     locations = readiness.get("locations", [])
     boroughs = sorted({row["borough"] for row in locations if row["borough"]})
     zones = sorted({row["zone"] for row in locations if row["zone"]})

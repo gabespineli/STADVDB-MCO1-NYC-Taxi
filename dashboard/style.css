@@ -1,6 +1,18 @@
-.block-container { max-width: 1480px; padding-top: 2rem; padding-bottom: 3rem; }
+.block-container { max-width: 1360px; padding-top: 2rem; padding-bottom: 3rem; }
 body [data-testid="stMain"] h1 { font-size: clamp(1.65rem, 3vw, 2.6rem); letter-spacing: -0.035em; }
 body [data-testid="stMain"] h2 { font-size: 1.4rem; letter-spacing: -0.02em; }
 [data-testid="stSidebar"] { border-right: 1px solid #dfe4ea; }
 [data-testid="stPlotlyChart"] { border-bottom: 1px solid #e2e7ed; padding-bottom: 1rem; }
-@media (max-width: 640px) { .block-container { padding: 1rem; } }
+[data-testid="stSidebar"] h2 { font-size: 1.2rem; }
+[data-testid="stMetricValue"] { font-size: clamp(1.3rem, 2.3vw, 1.9rem); font-variant-numeric: tabular-nums; }
+[data-testid="stMetric"] { padding: .5rem 0 1.25rem; }
+[data-testid="stVerticalBlockBorderWrapper"] { border-radius: .5rem; }
+[data-testid="stCaptionContainer"] { color: #4d5d70; }
+[data-testid="stExpander"] { margin-top: .5rem; }
+button, input, select { accent-color: #173b63; }
+::selection { background: #f3da8b; color: #172f4b; }
+:focus-visible { outline: 2px solid #173b63; outline-offset: 3px; }
+@media (max-width: 640px) {
+  .block-container { padding: 1rem; }
+  [data-testid="stMetricValue"] { font-size: 1.4rem; }
+}

@@ -258,7 +258,33 @@ If port 8501 is already occupied, use
 - Graceful unavailable, missing-table, empty-result, and query-error states. A live
   failure or empty result never silently becomes sample data.
 
-### Database configuration and safety
+### Saved results for presentations
+
+The default **Saved exports** mode reads completed aggregate reports from
+`dashboard/exports/` without connecting to MySQL. It opens an available report first
+(currently Q3 location efficiency). Your teammate can execute queries separately;
+copy each final timestamped TSV and its matching SUCCESS log into that folder,
+then choose **Refresh saved results**. Follow the filename, column, and completion
+metadata format in [dashboard/exports/README.md](dashboard/exports/README.md).
+Query execution is managed by your team separately; the original analytical SQL
+remains in `olap_queries.sql`. Reports without a completed export show an awaiting-results state.
+Partial, failed, unpaired, or row-count-mismatched exports are not presented as
+completed results. A successful export is explicitly marked as awaiting analytical
+review; it is not an approval of the SQL or the underlying data quality.
+
+Saved-result controls select existing borough, zone, period, category, and hour
+groups only where those fields exist. Q3 location results support a minimum trip
+count per group, duration/speed charts, and a logarithmic axis. Outlier warnings
+and flagged rows remain visible; filtering does not alter source files. There is
+no month/date filter for exports that do not contain that breakdown. The dashboard
+never averages the exported averages together. Downloads identify the filtered
+view or the complete export; literal `N/A` labels and SQL NULL (`\N`) are preserved.
+
+Use **Sample preview** for synthetic layout demonstrations or **Warehouse reports**
+for the existing explicitly approved SQL integration. Database presence checks now
+run only in warehouse mode. No new dependencies or SQL changes are required.
+
+### Live database configuration and safety
 
 The app reads the repository-root `.env` and existing `DB_USER`, `DB_PASSWORD`,
 `DB_HOST`, `DB_PORT`, and `DB_NAME` settings. `DB_TABLE` is intentionally unused:
@@ -285,8 +311,9 @@ supplies and approves the corresponding aggregated SQL. Reports that depend on
 late-night/rush-hour classifications or real geography also check those prerequisites.
 
 Borough, zone, month/date range, time period, fare range, distance category, and
-aggregation controls are prepared but disabled until a report has approved SQL
-bindings for them. Sample previews do not pretend those filters are implemented.
+aggregation controls are prepared for live SQL integration; they are hidden until
+a report has approved bindings. Saved-export controls are separate and only select
+existing result groups. Sample previews do not pretend SQL filters are implemented.
 
 Follow **[dashboard/queries/README.md](dashboard/queries/README.md)** to integrate
 the seven student-authored statements. Put one finalized statement in each named

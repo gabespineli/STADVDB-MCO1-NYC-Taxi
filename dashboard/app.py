@@ -15,6 +15,8 @@ from dashboard.config import database_settings
 from dashboard.filters import render_filters
 from dashboard.reports import REPORTS, approved_sql, live_blockers, report_config, validate_result
 from dashboard.sample_data import sample_result
+from dashboard.snapshots import completed_exports, load_export
+from dashboard.sections.common import render_saved
 from dashboard.sections import demand, efficiency, payments
 
 SECTIONS = {"Q1": demand, "Q2": payments, "Q3": efficiency}
@@ -25,43 +27,78 @@ def main():
     st.markdown("<style>" + (Path(__file__).parent / "style.css").read_text() + "</style>", unsafe_allow_html=True)
     st.title("NYC Yellow Taxi Analytics — 2025")
 
+    exports = {report.id: completed_exports(report.id) for report in REPORTS}
+    available = sum(bool(items) for items in exports.values())
+    default_section = next((report.section for report in REPORTS if exports[report.id]), "Q1")
     settings = None
     readiness = {"connected": False, "tables": {}, "locations": [], "time_periods": []}
-    try:
-        settings = database_settings()
-        with st.spinner("Checking warehouse availability…"):
-            readiness = db.warehouse_readiness(settings)
-    except ValueError as error:
-        readiness["error"] = str(error)
-
     with st.sidebar:
-        st.header("Explore")
+        st.header("Explore the warehouse")
         section = st.radio("Analytical section", list(SECTIONS),
+                           index=list(SECTIONS).index(default_section),
                            format_func=lambda key: {"Q1": "Q1 · Demand", "Q2": "Q2 · Payments", "Q3": "Q3 · Efficiency"}[key])
-        mode = st.radio("Data source", ["Sample preview", "Warehouse reports"])
-        st.divider()
-        st.subheader("Warehouse availability")
-        if readiness.get("error"):
-            st.warning(readiness["error"])
-        else:
-            st.success("MySQL connected")
-        populated = sum(status == "Has records" for status in readiness["tables"].values())
-        st.caption(f"{populated}/6 warehouse tables contain records. Presence is not ETL validation.")
-        if st.button("Refresh database status"):
-            db.warehouse_readiness.clear()
-            st.rerun()
-        with st.expander("Table checks"):
-            for table, status in readiness["tables"].items():
-                st.write(f"{table}: {status}")
-            st.caption("Checks use table metadata and LIMIT 1; no raw trips or full-table counts are loaded.")
+        mode = st.radio("Data source", ["Saved exports", "Sample preview", "Warehouse reports"],
+                        help="Saved exports open immediately without querying MySQL. Sample previews use synthetic data.")
+        if mode == "Saved exports":
+            st.caption(f"{available} of 7 reports have completed exports.")
+            if st.button("Refresh saved results", width="stretch"):
+                load_export.clear()
+                st.rerun()
+            with st.expander("Add your teammate’s results"):
+                st.write("Copy a compatible completed .tsv and matching SUCCESS .log into dashboard/exports, then refresh saved results.")
+                st.caption("Use the export format described in dashboard/exports/README.md. Failed and partial files are ignored. Export success is not analytical approval.")
+        if mode == "Warehouse reports":
+            st.divider()
+            st.subheader("Database availability")
+            try:
+                settings = database_settings()
+                with st.spinner("Checking warehouse availability…"):
+                    readiness = db.warehouse_readiness(settings)
+            except ValueError as error:
+                readiness["error"] = str(error)
+            if readiness.get("error"):
+                st.warning(readiness["error"])
+            elif readiness.get("connected"):
+                st.success("MySQL connected")
+            if st.button("Refresh database status"):
+                db.warehouse_readiness.clear()
+                st.rerun()
+            with st.expander("Table checks"):
+                for table, status in readiness["tables"].items():
+                    st.write(f"{table}: {status}")
+                st.caption("Presence checks do not validate ETL or execute reports.")
 
     module = SECTIONS[section]
     st.header(module.TITLE)
     st.caption(module.DESCRIPTION)
     section_reports = {item.id: item for item in REPORTS if item.section == section}
-    report_id = st.selectbox("Report", list(section_reports), key=f"report_{section}",
+    choices = list(section_reports)
+    preferred = next((index for index, key in enumerate(choices) if exports[key]), 0)
+    report_id = st.selectbox("Report", choices, index=preferred, key=f"report_{section}",
                              format_func=lambda key: section_reports[key].title)
     report = section_reports[report_id]
+    if mode == "Saved exports":
+        choices = exports[report.id]
+        if not choices:
+            st.info("Awaiting a completed export for this report.")
+            st.write("Your teammate can run this report separately and provide the TSV and matching completion log. No database query has been started.")
+            st.caption("Use Sample preview in the sidebar to explore its layout with clearly labeled synthetic data.")
+            with st.expander("Saved report availability"):
+                for item in REPORTS:
+                    st.write(f"{item.section} · {item.title}: {'Available' if exports[item.id] else 'Awaiting export'}")
+            return
+        selection = 0
+        if len(choices) > 1:
+            selection = st.selectbox("Saved run", range(len(choices)),
+                                     format_func=lambda i: choices[i].exported_at + f" · {choices[i].rows:,} result groups",
+                                     key=f"saved_run_{report.id}")
+        try:
+            with st.spinner("Opening saved results…"):
+                result = load_export(report, choices[selection])
+            render_saved(report, result)
+        except ValueError as error:
+            st.error(str(error))
+        return
     try:
         config = report_config(report.id)
     except ValueError as error:

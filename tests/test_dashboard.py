@@ -158,7 +158,9 @@ class DashboardAppTests(unittest.TestCase):
         health = patch.object(db, "warehouse_readiness", return_value=state or ready_state())
         health.start()
         self.addCleanup(health.stop)
-        return AppTest.from_file(str(ROOT / "dashboard" / "app.py"), default_timeout=30).run()
+        app = AppTest.from_file(str(ROOT / "dashboard" / "app.py"), default_timeout=30).run()
+        app.sidebar.radio[1].set_value("Sample preview").run()
+        return app.sidebar.radio[0].set_value("Q1").run()
 
     def test_all_sections_and_seven_reports_render_samples(self):
         app = self.start()
@@ -169,7 +171,7 @@ class DashboardAppTests(unittest.TestCase):
                 self.assertEqual(len(app.exception), 0)
                 self.assertTrue(any("SYNTHETIC SAMPLE" in warning.value for warning in app.warning))
                 self.assertGreater(len(app.get("plotly_chart")), 0)
-                self.assertTrue(app.selectbox[1].disabled)
+                self.assertFalse(any(widget.label == "Month" for widget in app.selectbox))
 
     def test_warehouse_mode_does_not_execute_unapproved_reports_or_show_samples(self):
         with patch.object(db, "run_report") as execute:
@@ -184,8 +186,10 @@ class DashboardAppTests(unittest.TestCase):
         state = {"connected": False, "tables": {}, "locations": [], "time_periods": [],
                  "error": "MySQL could not be reached."}
         app = self.start(state)
+        app.sidebar.radio[1].set_value("Warehouse reports").run()
         self.assertEqual(len(app.exception), 0)
         self.assertTrue(any("MySQL could not" in warning.value for warning in app.warning))
+        app.sidebar.radio[1].set_value("Sample preview").run()
         self.assertGreater(len(app.get("plotly_chart")), 0)
 
     def test_live_empty_result_is_not_replaced_with_sample(self):

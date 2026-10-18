@@ -17,6 +17,9 @@ def detail_rows(data):
     for column, labels in ROLLUP_LABELS.items():
         if column in result:
             result = result[result[column].notna() & ~result[column].isin(labels)]
+    for column in ("yr", "qtr", "mo"):
+        if column in result:
+            result = result[pd.to_numeric(result[column], errors="coerce").notna()]
     return result
 
 
@@ -27,8 +30,8 @@ def show(figure, sample, key):
     figure.update_layout(
         template="plotly_white", colorway=COLORS, font={"family": "Arial", "color": "#233247"},
         title={"text": title, "font": {"size": 14}, "x": 0, "xanchor": "left"},
-        margin={"t": 85, "r": 20, "b": 120, "l": 20},
-        legend={"title_text": "", "orientation": "h", "y": -0.3, "yanchor": "top", "x": 0},
+        margin={"t": 75, "r": 20, "b": 110, "l": 20},
+        legend={"title_text": "", "orientation": "h", "y": -0.25, "yanchor": "top", "x": 0},
     )
     st.plotly_chart(figure, key=key,
                     config={"displaylogo": False, "toImageButtonOptions": {"filename": key + ("_SAMPLE" if sample else "_warehouse")}})
@@ -40,9 +43,11 @@ def render_charts(report_id, data, sample):
         st.info("No detail rows are available to chart. The returned result, including rollups, is shown below.")
         return
     if report_id == "q1_demand":
-        show(px.bar(detail, x="total_filtered_pickups", y="zone", color="borough", orientation="h",
-                    title="Zone demand · weekend or late-night pickups", labels={"total_filtered_pickups": "Pickups", "zone": ""},
-                    color_discrete_sequence=COLORS, height=max(360, min(900, len(detail) * 24))), sample, report_id + "_zones")
+        top = detail.nlargest(20, "total_filtered_pickups").sort_values("total_filtered_pickups")
+        show(px.bar(top, x="total_filtered_pickups", y="zone", color="borough", orientation="h",
+                    title="Top 20 zones · weekend or late-night pickups", labels={"total_filtered_pickups": "Pickups", "zone": ""},
+                    color_discrete_sequence=COLORS, height=max(360, min(760, len(top) * 30))), sample, report_id + "_zones")
+        st.caption("The zone chart shows up to 20 groups by pickup count. All filtered detail groups contribute to the borough comparison and result table.")
         counts = ["weekday_late_night_pickups", "weekend_late_night_pickups", "all_weekend_pickups"]
         grouped = detail.groupby("borough", as_index=False)[counts].sum(min_count=1)
         melted = grouped.melt(id_vars="borough", var_name="Measure", value_name="Pickups")
@@ -97,9 +102,21 @@ def render_charts(report_id, data, sample):
         if scatter.empty:
             st.info("No valid trip-count values are available for the location chart.")
             return
-        show(px.scatter(scatter, x="avg_distance_miles", y="avg_duration_minutes", size="trip_count", color="borough",
+        measure = st.radio("Efficiency measure", ["Trip duration", "Estimated speed"], horizontal=True, key=report_id + "_measure")
+        axis = "avg_duration_minutes" if measure == "Trip duration" else "avg_speed_mph"
+        log_axis = st.checkbox("Logarithmic vertical scale", key=report_id + "_log", help="Useful for viewing a wide range. Only positive values can be drawn on a logarithmic axis.")
+        if log_axis:
+            hidden = int((scatter[axis].le(0) | scatter[axis].isna()).sum())
+            scatter = scatter[scatter[axis] > 0]
+            if hidden:
+                st.caption(f"{hidden:,} groups with zero or missing values cannot appear on the logarithmic chart; they remain in the result table.")
+        if scatter.empty:
+            st.info("No plottable values for this scale. Switch off the logarithmic scale or change the filters.")
+            return
+        show(px.scatter(scatter, x="avg_distance_miles", y=axis, size="trip_count", color="borough", log_y=log_axis,
                         hover_name="zone", hover_data=["hour", "time_period", "avg_speed_mph", "trip_count"],
-                        title="Location travel efficiency · weekday trips of 2–5 miles",
+                        title=measure + " by pickup location · weekday trips of 2–5 miles",
                         labels={"avg_distance_miles": "Mean distance (miles)", "avg_duration_minutes": "Mean duration (minutes)",
                                 "avg_speed_mph": "Mean estimated speed (mph)"}, color_discrete_sequence=COLORS,
-                        height=470), sample, report_id)
+                        size_max=32, opacity=0.65, height=500), sample, report_id)
+        st.caption("Each point is an existing zone × pickup hour × time-period group. Bubble size represents trips. Hover to inspect a group; use the legend to focus on a borough.")
