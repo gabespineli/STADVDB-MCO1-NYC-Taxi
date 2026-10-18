@@ -59,15 +59,12 @@ GROUP BY
 -- Q2
 -- Payment methods across fare ranges
 SELECT 
-    COALESCE(
-        CASE 
-            WHEN f.fare_amount < 10 THEN '1. Under $10'
-            WHEN f.fare_amount BETWEEN 10 AND 24.99 THEN '2. $10 - $24.99'
-            WHEN f.fare_amount BETWEEN 25 AND 49.99 THEN '3. $25 - $49.99'
-            ELSE '4. $50 and Above'
-        END, 
-        'ALL FARE TIERS'
-    ) AS fare_range,
+    CASE 
+        WHEN f.fare_amount < 10 THEN '1. Under $10'
+        WHEN f.fare_amount BETWEEN 10 AND 24.99 THEN '2. $10 - $24.99'
+        WHEN f.fare_amount BETWEEN 25 AND 49.99 THEN '3. $25 - $49.99'
+        ELSE '4. $50 and Above'
+    END AS fare_range,
     SUM(CASE WHEN p.payment_method = 'Credit Card' THEN 1 ELSE 0 END) AS credit_card_trips,
     SUM(CASE WHEN p.payment_method = 'Cash' THEN 1 ELSE 0 END) AS cash_trips,
     SUM(CASE WHEN p.payment_method NOT IN ('Credit Card', 'Cash') THEN 1 ELSE 0 END) AS other_payment_trips,
@@ -76,13 +73,7 @@ SELECT
 FROM fact_trip_records f
 JOIN dim_payment p ON f.payment_id = p.payment_id
 WHERE f.fare_amount > 0
-GROUP BY 
-    CASE 
-        WHEN f.fare_amount < 10 THEN '1. Under $10'
-        WHEN f.fare_amount BETWEEN 10 AND 24.99 THEN '2. $10 - $24.99'
-        WHEN f.fare_amount BETWEEN 25 AND 49.99 THEN '3. $25 - $49.99'
-        ELSE '4. $50 and Above'
-    END WITH ROLLUP;
+GROUP BY fare_range WITH ROLLUP;
 
 -- Payment methods by borough and time period
 SELECT 
@@ -107,15 +98,12 @@ GROUP BY
 -- Rush hour vs off-peak trip time efficiency
 SELECT 
     COALESCE(l.borough, 'ALL BOROUGHS') AS borough,
-    COALESCE(
-        CASE 
-            WHEN f.trip_distance < 2 THEN '1. Short (< 2 mi)'
-            WHEN f.trip_distance BETWEEN 2 AND 4.99 THEN '2. Medium (2 - 4.99 mi)'
-            WHEN f.trip_distance BETWEEN 5 AND 9.99 THEN '3. Long (5 - 9.99 mi)'
-            ELSE '4. Very Long (10+ mi)'
-        END,
-        'All Distance Tiers'
-    ) AS distance_bucket,
+    CASE 
+        WHEN f.trip_distance < 2 THEN '1. Short (< 2 mi)'
+        WHEN f.trip_distance BETWEEN 2 AND 4.99 THEN '2. Medium (2 - 4.99 mi)'
+        WHEN f.trip_distance BETWEEN 5 AND 9.99 THEN '3. Long (5 - 9.99 mi)'
+        ELSE '4. Very Long (10+ mi)'
+    END AS distance_bucket,
     ROUND(AVG(CASE WHEN t.time_period IN ('Morning Rush', 'Evening Rush', 'Rush Hour') THEN f.trip_duration_seconds / 60.0 END), 2) AS rush_hour_duration_min,
     ROUND(AVG(CASE WHEN t.time_period NOT IN ('Morning Rush', 'Evening Rush', 'Rush Hour') THEN f.trip_duration_seconds / 60.0 END), 2) AS off_peak_duration_min,
     ROUND(AVG(CASE WHEN t.time_period IN ('Morning Rush', 'Evening Rush', 'Rush Hour') THEN f.estimated_speed_mph END), 2) AS rush_hour_speed_mph,
@@ -128,13 +116,8 @@ WHERE d.is_weekend = 0
   AND f.trip_distance > 0
   AND f.trip_duration_seconds > 0
 GROUP BY 
-    l.borough,
-    CASE 
-        WHEN f.trip_distance < 2 THEN '1. Short (< 2 mi)'
-        WHEN f.trip_distance BETWEEN 2 AND 4.99 THEN '2. Medium (2 - 4.99 mi)'
-        WHEN f.trip_distance BETWEEN 5 AND 9.99 THEN '3. Long (5 - 9.99 mi)'
-        ELSE '4. Very Long (10+ mi)'
-    END WITH ROLLUP;
+    l.borough, 
+    distance_bucket WITH ROLLUP;
 
 -- Trip time efficiency for mid-range trips (2-5 mi)
 SELECT 
