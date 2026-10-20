@@ -237,145 +237,49 @@ Team-supplied benchmark runtimes appear in its registry.
 
 ## Analytics dashboard (Streamlit)
 
-**Current integration:** all seven completed optimized statements are connected.
-See **[dashboard/RUNNING.md](dashboard/RUNNING.md)** for current startup,
-read-only account, long-query caching, and ngrok instructions, and
-[dashboard/VERIFICATION.md](dashboard/VERIFICATION.md) for checks and limitations.
-
-The dashboard is a separate presentation layer in `dashboard/`. It does not modify
-or run the raw importer, schema, ETL scripts, or root `olap_queries.sql`.
-
-From this repository directory on Windows:
+The dashboard presents all seven approved OLAP results from completed saved
+exports. Start it from the repository directory:
 
 ```powershell
 python -m pip install -r requirements.txt
-python -m streamlit run dashboard/app.py
+python -m streamlit run dashboard/app.py --server.port 8502
 ```
 
-Open **http://127.0.0.1:8501**. Streamlit and Plotly are the only new direct Python
-dependencies. Recent Streamlit releases require a newer Python than the importer's
-Python 3.9 minimum; Python **3.10+** is recommended for the dashboard (tested here
-with Python 3.14). Run the command in your existing environment if it is compatible.
+Recent Streamlit releases require Python 3.10+; the project was tested with
+Python 3.14. Port 8501 may be occupied by a Windows system listener.
 
-If port 8501 is already occupied, use
-`python -m streamlit run dashboard/app.py --server.port 8502` and open
-**http://127.0.0.1:8502** instead. Use that same port in any later ngrok command.
+The header alongside Deploy contains Overview and grouped Q1 Demand, Q2 Payments,
+and Q3 Travel menus. Each report keeps charts and key numbers prominent, with brief
+findings derived from its selected data. **Adjust view** holds filters and chart
+settings; **Data** holds tables, downloads, scope, and methodology.
 
-### What works now
+Only saved exports are displayed. The dashboard does not read database
+credentials, run queries, or substitute synthetic previews. Copy final
+timestamped TSV/SUCCESS-log pairs into `dashboard/exports/`; the latest completed
+run is selected automatically. Reload after adding files.
+See [dashboard/exports/README.md](dashboard/exports/README.md) for the format.
 
-- Separate Q1 demand, Q2 payment/fare, and Q3 travel-efficiency sections, with seven
-  report views matching the existing OLAP output aliases.
-- Plotly charts, detailed aggregated result tables, classified CSV downloads, and
-  prominent synthetic-sample labels. Sample reports are independent UI fixtures;
-  they are not actual NYC findings or an approved time-classification policy.
-- Read-only MySQL connectivity and warehouse availability checks, using table
-  metadata and `LIMIT 1` checks on the six fixed warehouse tables. No raw trip
-  records or expensive full-table counts are used to test connectivity.
-- Cached engines, 60-second availability checks, and 24-hour report results.
-  Analytical reports run only after the user selects Load warehouse report. The
-  database defaults to a five-second connection timeout and a configurable
-  7,200-second socket read timeout;
-  the latter is not a guaranteed server-side query execution deadline.
-- Graceful unavailable, missing-table, empty-result, and query-error states. A live
-  failure or empty result never silently becomes sample data.
+Available views include hourly averages or totals, payment count/share and
+group dollar measures, rush-hour differences, monthly and hourly heatmaps,
+selected-zone profiles, bubble exploration, and an optional official taxi-zone
+map. Missing periods remain gaps, subgroup means are not pooled, and totals from
+overlapping report populations are not added. Detailed and complete downloads
+preserve their distinct scopes.
 
-### Saved results for presentations
+The dashboard is a presentation layer; analytical SQL, raw importer, schema,
+ETL, and indexes remain unchanged. Query execution and export preparation are
+managed separately. Saved-mode browsing needs no MySQL connection.
 
-The default **Saved exports** mode reads completed aggregate reports from
-`dashboard/exports/` without connecting to MySQL. It opens an available report first
-when a complete export exists. Your teammate can execute queries separately;
-copy each final timestamped TSV and its matching SUCCESS log into that folder,
-then choose **Refresh saved results**. Follow the filename, column, and completion
-metadata format in [dashboard/exports/README.md](dashboard/exports/README.md).
-Query execution is managed by your team separately; the original analytical SQL
-remains in `olap_queries.sql`. Reports without a completed export show an awaiting-results state.
-Partial, failed, unpaired, or row-count-mismatched exports are not presented as
-completed results. A successful export is explicitly marked as awaiting analytical
-review; it is not an approval of the SQL or the underlying data quality.
-
-Saved-result controls select existing borough, zone, period, category, and hour
-groups only where those fields exist. Q3 location results support a minimum trip
-count per group, duration/speed charts, and a logarithmic axis. Outlier warnings
-and flagged rows remain visible; filtering does not alter source files. There is
-no month/date filter for exports that do not contain that breakdown. The dashboard
-never averages the exported averages together. Downloads identify the filtered
-view or the complete export; literal `N/A` labels and SQL NULL (`\N`) are preserved.
-
-Use **Sample preview** for synthetic layout demonstrations or **Warehouse reports**
-for the existing explicitly approved SQL integration. Database presence checks now
-run only in warehouse mode. No new dependencies or SQL changes are required.
-
-### Live database configuration and safety
-
-The app reads the repository-root `.env` and existing `DB_USER`, `DB_PASSWORD`,
-`DB_HOST`, `DB_PORT`, and `DB_NAME` settings. `DB_TABLE` is intentionally unused:
-raw source tables and benchmark tables are not dashboard reporting inputs.
-
-For a separate warehouse schema or a dedicated SELECT-only login, optionally set
-`DASHBOARD_DB_NAME`, `DASHBOARD_DB_USER`, `DASHBOARD_DB_PASSWORD`,
-`DASHBOARD_DB_HOST`, and `DASHBOARD_DB_PORT`. Each override falls back to its
-corresponding existing setting; there is no automatic database creation or migration.
-Have your database administrator provision a dedicated account with direct
-SELECT-only grants on the warehouse tables. Live execution refuses root and
-unverified privileges; no users or grants are created automatically.
-
-All reads execute in MySQL read-only transactions. Trusted local report SQL also
-passes a conservative single-statement/warehouse-table guard. This is not a SQL
-sandbox or a substitute for account privileges. No database credentials or original
-driver exceptions are rendered in the UI. `.env` remains Git-ignored. No tokens or
-passwords belong in `reports.json`, SQL files, or downloaded CSVs.
-
-### Approved SQL and parameter scope
-
-All seven entries now select their approved statement directly from the unchanged
-root `olap_queries_optimized.sql`, with a file fingerprint, population, grain, and
-team-supplied runtime. The live-report interface requires a verified SELECT-only
-account and populated warehouse tables. Reports that depend on
-late-night/rush-hour classifications or real geography also check those prerequisites.
-
-Borough, zone, month/date range, time period, fare range, distance category, and
-aggregation controls are prepared for live SQL integration; they are hidden until
-a report has approved bindings. Saved-export controls are separate and only select
-existing result groups. Sample previews do not pretend SQL filters are implemented.
-
-The seven current statements contain no bind parameters. Database population
-filters and alternate aggregation levels therefore require student-authored SQL
-changes before they can be enabled. Separate display controls only select returned
-groups. Follow **[dashboard/queries/README.md](dashboard/queries/README.md)** for
-future team-approved revisions. No analytical SQL was generated or modified.
-
-Use **Refresh database status** after warehouse changes. To refresh report data,
-select Load warehouse report again; identical requests can use the 24-hour cache.
-Use Refresh from MySQL for an explicit fresh execution. Chart interactions do not
-execute SQL, and only one expensive report runs at a time in this app process.
-Restart Streamlit after changing database credentials or environment configuration.
-
-### Sharing later through ngrok
-
-The app binds to localhost by default. Nothing automatically opens a public tunnel.
-Install the [official ngrok CLI](https://ngrok.com/docs/start) separately, complete its account/token setup locally,
-and, only when you are ready to share, leave Streamlit running and run this in a
-second terminal:
-
-```powershell
-ngrok http 8501
-```
-
-Share the forwarding HTTPS URL and stop the ngrok process when the presentation
-ends. Ngrok is not a required Python library. Keep Streamlit's default CORS/XSRF
-protections enabled. Anyone with an unrestricted tunnel URL can view the dashboard;
-use ngrok access controls if the audience must be restricted. No tunnel was started
-as part of this setup.
-
-### Dashboard code map
+See [dashboard/RUNNING.md](dashboard/RUNNING.md) for current controls, map
+provenance, and sharing instructions, and
+[dashboard/VERIFICATION.md](dashboard/VERIFICATION.md) for checks and limits.
 
 | Location | Responsibility |
 | --- | --- |
-| `dashboard/app.py` | Navigation, source mode, report loading, and visible status |
-| `dashboard/config.py`, `dashboard/db.py` | Environment settings, read-only connections, lightweight checks, cached query execution |
-| `dashboard/reports.py`, `dashboard/reports.json` | Seven output contracts, validation flags, and approved parameter mappings |
-| `dashboard/filters.py`, `dashboard/charts.py` | Reusable controls and Plotly views |
-| `dashboard/sections/` | Q1, Q2, Q3, and shared result/table/export presentation |
-| `dashboard/sample_data.py` | Explicitly synthetic result fixtures |
-| `dashboard/queries/README.md` | OLAP integration handoff; no generated analytical SQL |
-| `.streamlit/config.toml`, `dashboard/style.css` | Local binding, telemetry preference, and presentation styling |
+| `dashboard/app.py` | Native header navigation and latest saved-report selection |
+| `dashboard/sections/` | Overview and compact chart/table presentation |
+| `dashboard/controls.py`, `dashboard/filters.py` | Display filters and secondary chart settings |
+| `dashboard/charts.py`, `dashboard/analytics.py` | Visualizations and display-only calculations |
+| `dashboard/presentation.py` | Scoped metrics, concise findings, and definitions |
+| `dashboard/snapshots.py` | Completed-export discovery, validation, and caching |
+| `dashboard/geography.py`, `reference_data/taxi_zones*` | Official boundaries and conservative zone matching |

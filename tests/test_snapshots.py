@@ -62,18 +62,21 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(len(filter_saved_rows(self.data, {})), 2)
 
     def test_snapshot_default_never_connects_to_mysql_and_filters_reset(self):
+        from dashboard_fixtures import select_report
         with patch.object(snapshots, "RESULTS", self.folder), patch.object(db, "warehouse_readiness") as health, patch.object(db, "run_report") as query:
             app = AppTest.from_file(str(ROOT / "dashboard/app.py"), default_timeout=30).run()
             self.assertEqual(len(app.exception), 0)
-            self.assertEqual(app.sidebar.radio[1].value, "Saved exports")
-            self.assertEqual(app.sidebar.radio[0].value, "Q3")
-            self.assertEqual(app.metric[0].value, "2")
+            self.assertEqual(len(app.sidebar.radio), 0)
+            self.assertEqual(app.title[0].value, "Overview")
+            self.assertEqual(app.metric[0].value, "Unavailable")
+            select_report(app, "Q3", "q3_location")
+            self.assertEqual(app.metric[0].value, "102")
             next(widget for widget in app.selectbox if widget.label == "Borough").set_value("Manhattan").run()
-            self.assertEqual(app.metric[0].value, "1")
+            self.assertEqual(app.metric[0].value, "100")
             next(button for button in app.button if button.label == "Reset view").click().run()
-            self.assertEqual(app.metric[0].value, "2")
+            self.assertEqual(app.metric[0].value, "102")
             self.assertIsNone(next(widget for widget in app.selectbox if widget.label == "Borough").value)
-            app.sidebar.radio[0].set_value("Q1").run()
+            select_report(app, "Q1", "q1_demand")
             self.assertTrue(any("Awaiting a completed export" in info.value for info in app.info))
             self.assertEqual(len(app.get("plotly_chart")), 0)
             health.assert_not_called()

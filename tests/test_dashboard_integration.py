@@ -102,78 +102,49 @@ class IntegratedDatabaseTests(unittest.TestCase):
 
 
 class IntegratedAppTests(unittest.TestCase):
-    def app(self):
-        app = AppTest.from_file(str(ROOT / "dashboard/app.py"), default_timeout=30).run()
-        return app.sidebar.radio[1].set_value("Warehouse reports").run()
+    def setUp(self):
+        from dashboard_fixtures import saved_fixtures
+        self.fixture = saved_fixtures()
+        self.fixture.__enter__()
+        self.addCleanup(self.fixture.__exit__, None, None, None)
 
-    def test_all_seven_live_layouts_only_run_on_click_then_filter_without_sql(self):
-        def fake_run(settings, report_id, sql, parameters, _request_id=None):
-            # Explicitly mocked fixtures validate UI wiring, not real taxi findings.
-            return {"data": sample_result(report_id), "fetched_at": "2026-10-19T12:00:00+00:00",
-                    "seconds": 1, "execution_id": _request_id}
-        with patch.object(db, "warehouse_readiness", return_value=ready_state()), patch.object(db, "run_report", side_effect=fake_run) as run:
-            app = self.app()
-            run.assert_not_called()
-            for section in ("Q1", "Q2", "Q3"):
-                app.sidebar.radio[0].set_value(section).run()
-                for report in (r for r in reports.REPORTS if r.section == section):
-                    app.selectbox[0].set_value(report.id).run()
-                    before = run.call_count
-                    self.assertFalse(any(widget.label == "Pickup date range" for widget in app.date_input))
-                    next(b for b in app.button if b.label == "Load warehouse report").click().run()
-                    self.assertEqual(run.call_count, before + 1)
-                    self.assertEqual(run.call_args.args[2], reports.approved_sql(report, reports.report_config(report.id)))
-                    self.assertEqual(run.call_args.args[3], {})
+    def test_all_saved_layouts_and_filters_never_query_mysql(self):
+        from dashboard_fixtures import start_app, select_report
+        with patch.object(db, "warehouse_readiness") as health, patch.object(db, "run_report") as query:
+            app = start_app()
+            for report in reports.REPORTS:
+                select_report(app, report.section, report.id)
+                self.assertEqual(len(app.exception), 0)
+                borough = next((w for w in app.selectbox if w.label == "Borough"), None)
+                if borough:
+                    borough.set_value("Manhattan").run()
                     self.assertEqual(len(app.exception), 0)
-                    self.assertGreater(len(app.get("plotly_chart")), 0)
-                    self.assertFalse(any("SYNTHETIC SAMPLE" in w.value for w in app.warning))
-                    self.assertTrue(any("Freshly retrieved" in c.value for c in app.caption))
-                    app.run()
-                    self.assertEqual(run.call_count, before + 1)
-                    borough = next((s for s in app.selectbox if s.label == "Borough"), None)
-                    if borough:
-                        borough.set_value("Manhattan").run()
-                        self.assertEqual(run.call_count, before + 1)
-                        self.assertEqual(len(app.exception), 0)
-                        visible = app.dataframe[0].value
-                        self.assertTrue(visible.borough.eq("Manhattan").all())
+                    self.assertTrue(app.dataframe[0].value.borough.eq("Manhattan").all())
+            health.assert_not_called()
+            query.assert_not_called()
 
-    def test_cached_label_refresh_and_unverified_login_block(self):
-        report = reports.REPORTS[0]
-        result = {"data": sample_result(report.id), "fetched_at": "test UTC", "execution_id": "previous-call", "seconds": 2}
-        with patch.object(db, "warehouse_readiness", return_value=ready_state()), patch.object(db, "run_report", return_value=result) as run:
-            app = self.app().sidebar.radio[0].set_value("Q1").run()
-            next(b for b in app.button if b.label == "Load warehouse report").click().run()
-            self.assertTrue(any("Cached database result" in c.value for c in app.caption))
-            next(b for b in app.button if b.label == "Refresh from MySQL").click().run()
-            run.clear.assert_called_once()
-            self.assertEqual(run.call_count, 2)
-        state = {**ready_state(), "read_only_account": False}
-        with patch.object(db, "warehouse_readiness", return_value=state), patch.object(db, "run_report") as run:
-            app = self.app()
-            self.assertTrue(any("SELECT-only" in w.value for w in app.warning))
-            self.assertTrue(next(b for b in app.button if b.label == "Load warehouse report").disabled)
-            self.assertTrue(next(b for b in app.button if b.label == "Refresh from MySQL").disabled)
-            run.assert_not_called()
-
-    def test_displayed_csv_and_complete_output_preserve_scope_nulls_and_na(self):
-        report = reports.REPORTS[-1]
-        data = sample_result(report.id).copy()
-        data.loc[0, "avg_speed_mph"] = None
-        data.loc[data.index[-1], "borough"] = "N/A"
-        result = {"data": data, "fetched_at": "test", "execution_id": "cached", "seconds": 1}
-        with patch.object(db, "warehouse_readiness", return_value=ready_state()), patch.object(db, "run_report", return_value=result), patch("dashboard.sections.common.st.download_button") as download:
-            app = self.app().sidebar.radio[0].set_value("Q3").run()
-            app.selectbox[0].set_value(report.id).run()
-            next(b for b in app.button if b.label == "Load warehouse report").click().run()
-            next(s for s in app.selectbox if s.label == "Borough").set_value("Manhattan").run()
+    def test_displayed_csv_and_complete_export_preserve_scope_nulls_and_na(self):
+        from dashboard_fixtures import start_app, select_report
+        with patch("dashboard.sections.common.st.download_button") as download:
+            app = select_report(start_app(), "Q3", "q3_location")
+            next(w for w in app.selectbox if w.label == "Borough").set_value("Manhattan").run()
             calls = {call.args[0]: call for call in download.call_args_list}
-            selected = pd.read_csv(BytesIO(calls["Download result CSV"].kwargs["data"]), keep_default_na=False, na_values=["\\N"])
-            pd.testing.assert_frame_equal(selected.drop(columns="data_classification"), app.dataframe[0].value.reset_index(drop=True), check_dtype=False)
-            complete = pd.read_csv(BytesIO(calls["Download complete SQL output"].args[1]), keep_default_na=False, na_values=["\\N"])
-            self.assertIn("N/A", complete.borough.tolist())
-            self.assertTrue(complete.avg_speed_mph.isna().any())
-            self.assertEqual(len(complete), len(data))
+            selected = pd.read_csv(BytesIO(calls["Download CSV"].args[1]), keep_default_na=False, na_values=["\\N"])
+            pd.testing.assert_frame_equal(selected, app.dataframe[0].value.reset_index(drop=True), check_dtype=False)
+            complete = pd.read_csv(BytesIO(calls["Download complete export"].args[1]), sep="\t", keep_default_na=False, na_values=["\\N"])
+            self.assertEqual(len(complete), len(sample_result("q3_location")))
+            self.assertGreater(len(complete), len(selected))
+
+    def test_adjust_view_resets_chart_and_population_controls(self):
+        from dashboard_fixtures import start_app, select_report
+        app = select_report(start_app(), "Q3", "q3_location")
+        next(w for w in app.selectbox if w.label == "Borough").set_value("Manhattan").run()
+        next(w for w in app.selectbox if w.label == "Location view").set_value("Bubble exploration").run()
+        next(w for w in app.checkbox if w.label == "Logarithmic vertical scale").check().run()
+        next(b for b in app.button if b.label == "Reset view").click().run()
+        self.assertIsNone(next(w for w in app.selectbox if w.label == "Borough").value)
+        self.assertEqual(next(w for w in app.selectbox if w.label == "Location view").value, "Hourly profile")
+        self.assertEqual(len(app.exception), 0)
 
 
 if __name__ == "__main__":

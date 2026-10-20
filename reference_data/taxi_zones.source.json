@@ -1,0 +1,9 @@
+{
+  "provider": "NYC Taxi and Limousine Commission via NYC Open Data",
+  "dataset": "8meu-9t5y",
+  "source_url": "https://data.cityofnewyork.us/Transportation/NYC-Taxi-Zones/8meu-9t5y/about_data",
+  "retrieved_local": "2026-10-20",
+  "original_sha256": "f8b1f3d5e015701a36eb54c5adfacffb9a49730f79527950b3d82fee3b9080f8",
+  "features": 263,
+  "transformation": "JSON whitespace removed and gzip compressed. Geometry and properties unchanged."
+}

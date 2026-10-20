@@ -1,11 +1,13 @@
-.block-container { max-width: 1360px; padding-top: 2rem; padding-bottom: 3rem; }
-body [data-testid="stMain"] h1 { font-size: clamp(1.65rem, 3vw, 2.6rem); letter-spacing: -0.035em; }
+.block-container { max-width: 1440px; padding-top: 1.5rem; padding-bottom: 2rem; }
+body [data-testid="stMain"] h1 { font-size: clamp(1.4rem, 2vw, 1.9rem); letter-spacing: -0.025em; }
 body [data-testid="stMain"] h2 { font-size: 1.4rem; letter-spacing: -0.02em; }
-[data-testid="stSidebar"] { border-right: 1px solid #dfe4ea; }
-[data-testid="stPlotlyChart"] { border-bottom: 1px solid #e2e7ed; padding-bottom: 1rem; }
-[data-testid="stSidebar"] h2 { font-size: 1.2rem; }
+[data-testid="stPlotlyChart"] { padding-bottom: .25rem; }
+[data-testid="stExpandSidebarButton"] { width: auto; padding: 0 .5rem; gap: .25rem; }
+[data-testid="stExpandSidebarButton"]::after { content: "Queries"; font-size: .875rem; }
+[data-testid="stPopoverBody"] { min-width: min(420px, calc(100vw - 2rem)); max-width: calc(100vw - 2rem); }
 [data-testid="stMetricValue"] { font-size: clamp(1.3rem, 2.3vw, 1.9rem); font-variant-numeric: tabular-nums; }
-[data-testid="stMetric"] { padding: .5rem 0 1.25rem; }
+[data-testid="stMetric"] { padding: .25rem 0 .5rem; }
+[data-testid="stMetricValue"] > div { white-space: normal; overflow-wrap: anywhere; }
 [data-testid="stVerticalBlockBorderWrapper"] { border-radius: .5rem; }
 [data-testid="stCaptionContainer"] { color: #4d5d70; }
 [data-testid="stExpander"] { margin-top: .5rem; }

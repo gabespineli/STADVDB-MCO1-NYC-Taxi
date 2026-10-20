@@ -162,90 +162,57 @@ class DatabaseTests(unittest.TestCase):
 
 
 class DashboardAppTests(unittest.TestCase):
-    def start(self, state=None):
-        health = patch.object(db, "warehouse_readiness", return_value=state or ready_state())
-        health.start()
-        self.addCleanup(health.stop)
-        app = AppTest.from_file(str(ROOT / "dashboard" / "app.py"), default_timeout=30).run()
-        app.sidebar.radio[1].set_value("Sample preview").run()
-        return app.sidebar.radio[0].set_value("Q1").run()
+    def setUp(self):
+        from dashboard_fixtures import saved_fixtures
+        self.fixture = saved_fixtures()
+        self.folder = self.fixture.__enter__()
+        self.addCleanup(self.fixture.__exit__, None, None, None)
 
-    def test_all_sections_and_seven_reports_render_samples(self):
-        app = self.start()
-        for section in ["Q1", "Q2", "Q3"]:
-            app.sidebar.radio[0].set_value(section).run()
-            for index in range(sum(report.section == section for report in reports.REPORTS)):
-                app.selectbox[0].select_index(index).run()
+    def test_all_seven_saved_reports_render_without_source_controls(self):
+        from dashboard_fixtures import start_app, select_report
+        with patch.object(db, "warehouse_readiness") as health, patch.object(db, "run_report") as query:
+            app = start_app()
+            self.assertEqual(app.title[0].value, "Overview")
+            self.assertEqual(len(app.sidebar.radio), 0)
+            self.assertFalse(any(w.label == "Data source" for w in app.radio))
+            for report in reports.REPORTS:
+                select_report(app, report.section, report.id)
                 self.assertEqual(len(app.exception), 0)
-                self.assertTrue(any("SYNTHETIC SAMPLE" in warning.value for warning in app.warning))
                 self.assertGreater(len(app.get("plotly_chart")), 0)
-                self.assertFalse(any(widget.label == "Month" for widget in app.selectbox))
+                self.assertFalse(any("SYNTHETIC SAMPLE" in w.value for w in app.warning))
+            health.assert_not_called()
+            query.assert_not_called()
 
-    def test_warehouse_mode_does_not_execute_on_startup_or_show_samples(self):
-        with patch.object(db, "run_report") as execute:
-            app = self.start()
-            app.sidebar.radio[1].set_value("Warehouse reports").run()
-            self.assertEqual(len(app.exception), 0)
+    def test_missing_exports_never_become_samples_or_database_queries(self):
+        from dashboard_fixtures import start_app, select_report
+        for path in self.folder.glob("*.log"):
+            path.write_text("FAILED\n")
+        with patch.object(db, "run_report") as query:
+            app = start_app()
             self.assertEqual(len(app.get("plotly_chart")), 0)
-            self.assertTrue(any("Load warehouse report" in info.value for info in app.info))
-            execute.assert_not_called()
-
-    def test_connection_failure_keeps_sample_preview_available(self):
-        state = {"connected": False, "tables": {}, "locations": [], "time_periods": [],
-                 "error": "MySQL could not be reached."}
-        app = self.start(state)
-        app.sidebar.radio[1].set_value("Warehouse reports").run()
-        self.assertEqual(len(app.exception), 0)
-        self.assertTrue(any("MySQL could not" in warning.value for warning in app.warning))
-        app.sidebar.radio[1].set_value("Sample preview").run()
-        self.assertGreater(len(app.get("plotly_chart")), 0)
-
-    def test_live_empty_result_is_not_replaced_with_sample(self):
-        report = reports.REPORTS[0]
-        config = {"validated": True, "aggregated": True, "population": "Approved test population", "grain": "zone", "filters": {}}
-        with patch.object(reports, "report_config", return_value=config), patch.object(reports, "approved_sql", return_value="SELECT 1"), patch.object(db, "run_report", return_value={"data": pd.DataFrame(columns=report.columns), "fetched_at": "test UTC"}):
-            app = self.start()
-            app.sidebar.radio[1].set_value("Warehouse reports").run()
-            next(button for button in app.button if button.label == "Load warehouse report").click().run()
-            self.assertEqual(len(app.exception), 0)
-            self.assertTrue(any("returned no rows" in info.value for info in app.info))
+            select_report(app, "Q1", "q1_demand")
+            self.assertTrue(any("Awaiting a completed export" in x.value for x in app.info))
             self.assertEqual(len(app.get("plotly_chart")), 0)
+            query.assert_not_called()
 
-    def test_approved_filter_bindings_apply_on_submit_only(self):
-        report = reports.REPORTS[3]
-        config = {"population": "Approved test population", "grain": "fare range",
-                  "filters": {"month": "selected_month", "fare_min": "minimum_fare", "fare_max": "maximum_fare"}}
-        result = {"data": sample_result(report.id), "fetched_at": "test UTC"}
-        with patch.object(reports, "report_config", return_value=config), patch.object(reports, "approved_sql", return_value="SELECT 1"), patch.object(db, "run_report", return_value=result) as execute:
-            app = self.start()
-            app.sidebar.radio[0].set_value("Q2").run()
-            app.sidebar.radio[1].set_value("Warehouse reports").run()
-            self.assertFalse(next(widget for widget in app.selectbox if widget.label == "Month").disabled)
-            self.assertTrue(next(widget for widget in app.selectbox if widget.label == "Borough").disabled)
-            self.assertFalse(next(widget for widget in app.number_input if widget.label == "Minimum fare ($)").disabled)
-            execute.assert_not_called()
-            next(widget for widget in app.selectbox if widget.label == "Month").select_index(1)
-            app.checkbox[0].check()
-            next(widget for widget in app.number_input if widget.label == "Minimum fare ($)").set_value(10.0)
-            next(widget for widget in app.number_input if widget.label == "Maximum fare ($)").set_value(50.0)
-            next(button for button in app.button if button.label == "Load warehouse report").click().run()
-            self.assertEqual(len(app.exception), 0)
-            self.assertEqual(execute.call_args.args[3], {"selected_month": 1, "minimum_fare": 10.0, "maximum_fare": 50.0})
-            self.assertFalse(any("SYNTHETIC SAMPLE" in warning.value for warning in app.warning))
+    def test_compact_navigation_and_toolbar(self):
+        from dashboard_fixtures import start_app, select_report
+        app = select_report(start_app(), "Q1", "q1_hourly")
+        self.assertEqual(len(app.sidebar), 0)
+        self.assertFalse(any(e.label == "NYC Taxi · 2025" for e in app.expander))
+        self.assertEqual(len(app.radio), 0)
+        self.assertEqual(app.title[0].value, "Hourly demand trends")
+        self.assertEqual(len(app._registered_pages), 8)
+        self.assertFalse(any(b.label in ("Load warehouse report", "Refresh from MySQL", "Refresh saved results") for b in app.button))
+        self.assertFalse(any("Current view: all returned" in c.value for c in app.caption))
 
-    def test_failed_live_reload_removes_previous_result(self):
-        report = reports.REPORTS[0]
-        config = {"population": "Approved test population", "grain": "zone", "filters": {}}
-        result = {"data": sample_result(report.id), "fetched_at": "test UTC"}
-        with patch.object(reports, "report_config", return_value=config), patch.object(reports, "approved_sql", return_value="SELECT 1"), patch.object(db, "run_report", side_effect=[result, db.DatabaseError("Database read failed")]):
-            app = self.start()
-            app.sidebar.radio[1].set_value("Warehouse reports").run()
-            next(button for button in app.button if button.label == "Load warehouse report").click().run()
-            self.assertGreater(len(app.get("plotly_chart")), 0)
-            next(button for button in app.button if button.label == "Load warehouse report").click().run()
-            self.assertEqual(len(app.exception), 0)
-            self.assertTrue(any("Database read failed" in error.value for error in app.error))
-            self.assertEqual(len(app.get("plotly_chart")), 0)
+    def test_invalid_saved_output_does_not_show_sample(self):
+        from dashboard_fixtures import start_app, select_report
+        path = next(self.folder.glob("q1_zone_borough_*.tsv"))
+        path.write_text("borough\tzone\nManhattan\tExample\n")
+        app = select_report(start_app(), "Q1", "q1_demand")
+        self.assertGreater(len(app.error), 0)
+        self.assertEqual(len(app.get("plotly_chart")), 0)
 
 
 if __name__ == "__main__":

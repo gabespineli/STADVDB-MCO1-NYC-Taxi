@@ -1,5 +1,84 @@
 # Dashboard integration verification
 
+## Header query navigation - 20 October 2026
+
+Replaced the collapsed NYC Taxi expander and section/report widgets with native
+`st.navigation(position="top")`. Overview is a direct header link; Q1 Demand,
+Q2 Payments, and Q3 Travel contain all seven reports with distinct URL paths.
+At narrow widths, the native header drawer button is visibly labeled Queries.
+
+- Regression: 78 tests run, 70 passed, 8 opt-in MySQL checks skipped; no failures
+  (20.867 seconds), using the temporary socket-free AppTest loop described below.
+- Browser review confirmed header placement alongside Deploy, Q1 dropdown
+  contents, and navigation from demand to hourly results using actual exports.
+- At 505px and 320px, Queries remained visible beside Deploy and opened the
+  native navigation drawer. Desktop payment menus also opened with Enter.
+  Temporary viewport overrides were reset after verification.
+- The earlier compact-interface implementation below is retained as history.
+
+## Compact saved-only interface - 20 October 2026, evening revision
+
+This revision replaces the source-mode UI and sidebar. The app now opens the
+latest completed saved exports only, with a native collapsed top navigation bar.
+There are no warehouse, sample, load-query, or refresh-query controls.
+Filters and chart settings share Adjust view; tables, downloads, provenance,
+and extended definitions share Data. Brief findings are computed from the
+selected result groups. Chart toolbars and repeated explanatory captions were
+removed; short material measurement notes remain beside charts.
+
+- Saved-only regression: 78 tests run, 70 passed, 8 opt-in MySQL checks skipped;
+  no failures (17.142 seconds). The temporary socket-free test loop described below was used.
+- All seven actual local saved exports, the Overview, and the official map
+  separately rendered through AppTest. Mock assertions confirmed zero database
+  status or query calls.
+- Navigation, collapsed control containers, every chart option, filter resets,
+  missing/invalid-export states, arithmetic, and filtered/complete CSV scope
+  are covered. Synthetic fixtures now simulate saved exports in UI tests;
+  removed source-mode UI tests were replaced with saved-only contracts.
+- Browser visual/layout review remains unverified under the same sandbox
+  socket and browser URL restrictions. AppTest is not pixel or mobile QA.
+
+Earlier source-mode and live-layout checks below describe the previous interface.
+
+## Dashboard comparison improvements - 20 October 2026
+
+Implemented the Overview entry page, scoped summary metrics, hourly average/total
+controls, payment percentage/count and dollar-measure controls, rush-hour
+duration differences, monthly zone comparisons, hourly location profiles and
+heatmaps, and the optional official taxi-zone map. Definitions, populations,
+missing-data treatment, small-group context, and overlapping demand categories
+are visible with the affected reports.
+
+- Regression: **80 tests run, 72 passed, 8 opt-in MySQL checks skipped**, no
+  failures; 20.786 seconds. Coverage includes arithmetic, missing/zero
+  denominators, missing months/hours, unpooled means, rollup exclusions,
+  source transitions, controls, reset, cache/permission guards, and download scope.
+- The sandbox blocks local socket connections. AppTest used a temporary,
+  test-only selector event loop without a socket wakeup pipe, plus an explicitly
+  writable temporary directory. No application or installed dependency was
+  changed for this test adaptation. Live networking and database tests were
+  not exercised by that run.
+- All seven **actual local saved exports** rendered in AppTest. The official
+  map, location heatmap, and bubble view also produced Plotly figures without
+  exceptions. Mock assertions confirmed these checks made no warehouse status
+  calls and executed no report SQL.
+- Official boundaries were downloaded through NYC Open Data's GeoJSON export
+  for dataset `8meu-9t5y`, then compressed without altering geometry.
+  Validation confirms 263 source features representing 260 distinct IDs;
+  split parts of IDs 56 and 103 become one MultiPolygon per ID. Ambiguous lookup
+  labels, unknown groups, and IDs without polygons do not multiply counts and
+  remain in metrics/downloads.
+- `git diff --check` passed. Analytical SQL, schema, ETL, indexes, raw importer,
+  and dependency requirements are unchanged. No database writes or report
+  executions were performed for these changes.
+- Full browser/layout QA is **not verified**: the sandbox cannot start the
+  Streamlit server's local socket loop, and browser policy rejects local-file
+  previews. AppTest/Plotly-figure checks do not establish pixel layout,
+  interactive map rendering, keyboard accessibility, or mobile behavior.
+
+The earlier verification below records the prior implementation's checks and
+does not substitute for browser review of these new views.
+
 Verified on 19 October 2026. This is application integration, not SQL optimization.
 
 | Check | Result and scope |
