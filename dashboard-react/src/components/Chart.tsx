@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlotElement, Trace, PlotLayout } from '../types';
-import { palette } from '../analytics';
+import { palette, selectionValue } from '../analytics';
 import { plotlyReady } from '../plotly-runtime';
 
 interface Props {
@@ -32,8 +32,8 @@ export default function Chart({ title, subtitle, data, layout = {}, height = 320
         if (!active) return;
         element.removeAllListeners?.('plotly_click');
         if (onSelect) element.on?.('plotly_click', event => {
-          const value = event.points[0]?.customdata;
-          if (typeof value === 'string') onSelect(value);
+          const value = selectionValue(event.points[0]?.customdata);
+          if (value !== undefined) onSelect(value);
         });
       }).catch(() => { if (active) setError('This chart could not be rendered. The source table is available in Data.'); });
     const observer = new ResizeObserver(() => {
@@ -58,8 +58,9 @@ export function Metric({ label, value, unit }: { label: string; value: string; u
   return <div className="metric"><span>{label}</span><strong>{value}<small>{unit}</small></strong></div>;
 }
 
-export function Select({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
+export function Select({ label, value, options, onChange }: { label: string; value: string; options: (string | { value: string; label: string })[]; onChange: (value: string) => void }) {
   return <label className="select-control"><span>{label}</span><select value={value} onChange={event => onChange(event.target.value)}>
-    {options.map(option => <option key={option}>{option}</option>)}
+    {options.map(option => typeof option === 'string' ? <option key={option}>{option}</option> :
+      <option key={option.value} value={option.value}>{option.label}</option>)}
   </select></label>;
 }

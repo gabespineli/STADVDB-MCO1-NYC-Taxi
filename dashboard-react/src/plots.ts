@@ -1,4 +1,4 @@
-import { compact, fmt, number, palette, paymentColors, rank, sum } from './analytics';
+import { categoryColor, compact, fmt, number, palette, rank, rush, sum } from './analytics.ts';
 import type { Row, Trace, PlotLayout } from './types';
 
 export const hiddenLegend = { showlegend: false };
@@ -19,36 +19,47 @@ export function monthlyPlot(rows: Row[]): Trace[] {
   return [{ ...line(rows, 'month', 'late_night_pickups', 'Pickups'), fill: 'tozeroy', fillcolor: 'rgba(36,77,112,.045)',
     hovertemplate: '%{x|%B %Y}<br>%{y:,.0f} pickups<extra></extra>' }];
 }
-export function farePlot(rows: Row[], share: boolean): Trace[] {
+export function farePlot(rows: Row[], share: boolean, selected = ''): Trace[] {
   const keys = ['credit_card_trips', 'cash_trips', 'other_payment_trips'];
   return keys.map((key, i) => ({ type: 'bar', name: ['Credit Card', 'Cash', 'Other'][i],
     x: rows.map(row => row.fare_range), y: rows.map(row => share ?
       (number(row[key]) !== null && number(row.total_trips) !== null && number(row.total_trips)! > 0 ? 100 * number(row[key])! / number(row.total_trips)! : null)
-      : number(row[key])), marker: { color: [palette[0], palette[1], palette[4]][i] },
-    hovertemplate: share ? '%{x}<br>%{y:.1f}%<extra>%{fullData.name}</extra>' : '%{x}<br>%{y:,.0f} trips<extra>%{fullData.name}</extra>' }));
+      : number(row[key])), marker: { color: [palette[0], palette[1], palette[4]][i],
+        opacity: rows.map(row => !selected || row.fare_range === selected ? 1 : .3) },
+    customdata: rows.map(row => [String(row.fare_range), number(row[key]), number(row.total_trips)]),
+    hovertemplate: share ? '%{x}<br>%{y:.1f}%<br>%{customdata[1]:,} / %{customdata[2]:,} trips<extra>%{fullData.name}</extra>' : '%{x}<br>%{y:,.0f} trips<extra>%{fullData.name}</extra>' }));
 }
-export function paymentPlot(rows: Row[], share: boolean): Trace[] {
-  return [...new Set(rows.map(row => String(row.payment_method)))].sort().map((method, index) => ({
+export function paymentPlot(rows: Row[], share: boolean, selected = ''): Trace[] {
+  return [...new Set(rows.map(row => String(row.payment_method)))].sort().map(method => ({
     type: 'bar', orientation: 'h', name: method, y: rows.filter(row => row.payment_method === method).map(row => row.borough),
     x: rows.filter(row => row.payment_method === method).map(row => number(row[share ? 'share' : 'trip_count'])),
-    marker: { color: paymentColors[method] ?? palette[index % palette.length] },
-    hovertemplate: share ? '%{y}<br>%{x:.1f}%<extra>%{fullData.name}</extra>' : '%{y}<br>%{x:,.0f} trips<extra>%{fullData.name}</extra>',
+    marker: { color: categoryColor(method), opacity: rows.filter(row => row.payment_method === method).map(row => !selected || row.borough === selected ? 1 : .3) },
+    customdata: rows.filter(row => row.payment_method === method).map(row => [String(row.borough), number(row.trip_count), number(row.population_trips)]),
+    hovertemplate: share ? '%{y}<br>%{x:.1f}%<br>%{customdata[1]:,} / %{customdata[2]:,} trips<extra>%{fullData.name}</extra>' : '%{y}<br>%{x:,.0f} trips<extra>%{fullData.name}</extra>',
   }));
 }
-export function heatmap(z: (number | null)[][], x: (string | number)[], y: string[], unit: string, diverging = false): Trace[] {
+export function heatmap(z: (number | null)[][], x: (string | number)[], y: string[], unit: string, diverging = false, limit?: number): Trace[] {
+  const bound = limit ?? Math.max(1, ...z.flat().map(value => Math.abs(value ?? 0)));
   return [{ type: 'heatmap', z, x, y, colorscale: diverging ? [[0, '#31867d'], [.5, '#f7f8f9'], [1, '#b76246']] : colorscale,
+    zmin: diverging ? -bound : 0, zmax: unit === '%' ? 100 : bound,
     ...(diverging ? { zmid: 0 } : {}), hoverongaps: false, xgap: 3, ygap: 3,
     colorbar: { thickness: 8, len: .8, outlinewidth: 0, tickfont: { size: 10 } },
     hovertemplate: `%{y}<br>%{x}<br>%{z:,.1f} ${unit}<extra></extra>` }];
 }
-export function pairedDuration(rows: Row[]): Trace[] {
+export function focusCell(x: string, y: string): Trace[] {
+  return x && y ? [{ type: 'scatter', mode: 'markers', x: [x], y: [y], showlegend: false, hoverinfo: 'skip',
+    marker: { symbol: 'square-open', size: 24, color: '#352a14', line: { width: 2 } } }] : [];
+}
+export function pairedDuration(rows: Row[], selected = ''): Trace[] {
   const x: (number | null)[] = [], y: (string | null)[] = [];
   rows.forEach(row => { x.push(number(row.off_peak_duration_min), number(row.rush_hour_duration_min), null); y.push(String(row.borough), String(row.borough), null); });
   return [
     { type: 'scatter', mode: 'lines', x, y, line: { color: '#cdd6de', width: 4 }, showlegend: false, hoverinfo: 'skip' },
     ...['off_peak_duration_min', 'rush_hour_duration_min'].map((key, i) => ({ type: 'scatter', mode: 'markers',
       name: ['Off-peak', 'Rush hour'][i], x: rows.map(row => number(row[key])), y: rows.map(row => row.borough),
-      marker: { color: [palette[0], palette[1]][i], size: 10 }, hovertemplate: '%{y}<br>%{x:.1f} minutes<extra>%{fullData.name}</extra>' })),
+      customdata: rush(rows).map(row => [String(row.borough), row.extra, row.percent]),
+      marker: { color: [palette[0], palette[1]][i], size: 10, opacity: rows.map(row => !selected || row.borough === selected ? 1 : .25) },
+      hovertemplate: '%{y}<br>%{x:.1f} minutes<br>Rush − off-peak: %{customdata[1]:.1f} min (%{customdata[2]:.1f}%)<extra>%{fullData.name}</extra>' })),
   ];
 }
 export function compactAxis(unit = ''): PlotLayout { return { ticksuffix: unit, gridcolor: '#e9edf0', zeroline: false, fixedrange: true, automargin: true }; }

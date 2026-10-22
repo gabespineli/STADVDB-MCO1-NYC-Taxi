@@ -8,6 +8,27 @@ const rollups: Record<string, string[]> = {
 export const palette = ['#244d70', '#976100', '#31867d', '#91759d', '#778697', '#b76246', '#758b48', '#5f77ac'];
 export const paymentColors: Record<string, string> = { 'Credit Card': palette[0], Cash: palette[1], Other: palette[4],
   'Flex Fare': palette[2], Dispute: palette[3], 'No Charge': palette[5], Unknown: palette[6], 'Voided Trip': palette[7] };
+export const periodColors: Record<string, string> = {
+  'Morning Rush': palette[1], 'Evening Rush': palette[5], Midday: palette[0], 'Late Night': palette[2],
+};
+// A category's color must not depend on which other categories are currently visible.
+export function categoryColor(label: string): string {
+  const hash = [...label].reduce((value, char) => (value * 31 + char.charCodeAt(0)) >>> 0, 0);
+  return paymentColors[label] ?? periodColors[label] ?? palette[hash % palette.length];
+}
+export const zoneId = (row: Row) => JSON.stringify([row.borough, row.zone]);
+export const zoneLabel = (row: Row) => `${row.zone} · ${row.borough}`;
+export function selectionValue(customdata: unknown): string | undefined {
+  const value = Array.isArray(customdata) ? customdata[0] : customdata;
+  return typeof value === 'string' ? value : undefined;
+}
+export function linkedMonthlyRows(demand: Row[], rows: Row[], selected: Row): Row[] | null {
+  const identities = new Set(demand.filter(row => row.zone === selected.zone).map(zoneId));
+  return identities.size === 1 && identities.has(zoneId(selected)) ? rows.filter(row => row.zone === selected.zone) : null;
+}
+export function maximum(rows: Row[], key: string): number {
+  return rows.reduce((largest, row) => Math.max(largest, Math.abs(number(row[key]) ?? 0)), 0) || 1;
+}
 export const number = (value: Cell | undefined): number | null =>
   value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value)) ? Number(value) : null;
 export const sum = (rows: Row[], key: string): number | null => {
@@ -49,7 +70,7 @@ export function rush(rows: Row[]): Row[] {
 export function paymentMix(rows: Row[], dimensions: string[]): Row[] {
   return [...group(rows, dimensions).values()].flatMap(items => {
     const total = sum(items, 'trip_count');
-    return items.map(row => ({ ...row, share: ratio(number(row.trip_count), total) }));
+    return items.map(row => ({ ...row, population_trips: total, share: ratio(number(row.trip_count), total) }));
   });
 }
 export function monthKey(row: Row): string | null {

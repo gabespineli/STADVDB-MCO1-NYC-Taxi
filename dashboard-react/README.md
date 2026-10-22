@@ -35,6 +35,29 @@ coverage context, blue for geographic/category comparisons, green for temporal
 patterns, and warm cream for fare/tip details. Chart labels use darker secondary
 text, and the amber series stays dark enough to stand apart from tinted cards.
 
+Yellow cards now summarize computed patterns: leading zone with temporal peaks,
+the lowest/highest fare-tier card shares, and rush-hour differences against the
+off-peak baseline. They update with compatible selections.
+
+- **Demand:** select a ranking bar, map zone, or zone dropdown. The map/ranking
+  highlight that zone, the hourly chart changes to its borough, and the monthly
+  trend follows its zone name only when the name identifies one borough/zone.
+  Ambiguous names retain the all-zone trend with an explicit note. Select
+  **All zones** to clear; changing the hourly borough also clears zone focus.
+- **Payments:** fare bars and recorded tips share one fare selection. The card
+  heatmap and borough distribution share borough/time focus. Those two groups
+  stay independent because the exports do not contain their joint dimensions.
+  The dropdowns provide keyboard selection and **All** options clear focus.
+- **Travel:** select paired dots, a difference cell, or a borough dropdown to
+  coordinate the comparison and the available zone profiles. Difference cells
+  also set comparison distance. Profiles retain their labeled weekday 2–5-mile
+  scope; their distance population does not change with the comparison tier.
+
+Share axes and heatmaps always span 0–100%. Duration-difference heatmaps have
+equal positive/negative limits around zero. Category colors stay stable when
+methods or periods disappear. Share hovers include the exact numerator and
+denominator; profile-average hovers include their own group trip counts.
+
 | Question | Evidence kept together |
 | --- | --- |
 | Q1 · Where and when is taxi demand strongest? | Leading zone and share, geographic demand, zone ranking, weekday/weekend hourly profiles, monthly volume, and zone/month consistency |
@@ -66,7 +89,8 @@ Plotly browser library locally. No CDN or new Python dependency is needed.
   Negative gaps remain visible. Observed differences are not causal evidence.
 - Missing periods remain gaps. Subtotals are excluded from plots. Unknown
   denominators stay unknown, and exported group means are never averaged.
-- Data/CSV reflect the selected hourly borough or location profile. Other
+- Data/CSV reflect the selected hourly borough, compatible monthly zone,
+  payment borough/time, or location profile. Other
   chart-local selections and top-N rankings can show subsets of their source
   table. The complete original TSV always preserves rollups and SQL `\N`.
 - CSV preserves nulls and literal `N/A`; formula-like string labels receive a
@@ -90,11 +114,12 @@ Generated data, build output, and dependencies are ignored by Git.
 
 ## Verification — 22 October 2026
 
-`npm run build` and the seven `npm test` calculation checks passed. React server
+`npm run build` and all twelve `npm test` checks passed. React server
 rendering verified each combined question, all seven source choices, and legacy
 query-link routing. The model checks cover rollups, missing periods, local
 payment denominators, negative gaps, duplicate-cell refusal, CSV handling, and
-reconciliation against actual saved exports.
+reconciliation against actual saved exports, safe zone coordination, selection
+identities, fixed percentage/diverging scales, stable colors, and hover evidence.
 
 Browser interaction, screenshots, responsive layout, and WebGL rendering remain
 unverified because browser-control tools are unavailable in this session.
