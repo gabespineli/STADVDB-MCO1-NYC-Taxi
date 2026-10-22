@@ -5,7 +5,7 @@ const rollups: Record<string, string[]> = {
   time_period: ['All Time Periods'], payment_method: ['All Payment Methods'],
   fare_range: ['ALL FARE TIERS'], distance_bucket: ['All Distance Tiers'],
 };
-export const palette = ['#244d70', '#d39724', '#31867d', '#91759d', '#778697', '#b76246', '#758b48', '#5f77ac'];
+export const palette = ['#244d70', '#976100', '#31867d', '#91759d', '#778697', '#b76246', '#758b48', '#5f77ac'];
 export const paymentColors: Record<string, string> = { 'Credit Card': palette[0], Cash: palette[1], Other: palette[4],
   'Flex Fare': palette[2], Dispute: palette[3], 'No Charge': palette[5], Unknown: palette[6], 'Voided Trip': palette[7] };
 export const number = (value: Cell | undefined): number | null =>

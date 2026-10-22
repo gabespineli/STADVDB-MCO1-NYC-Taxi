@@ -1,12 +1,11 @@
-# React dashboard — first pass
+# React dashboard — question-led bento
 
-A separate React + TypeScript + Vite application using Plotly and the seven
-completed query exports. The Streamlit app stays available at its existing path.
+React + TypeScript + Vite + Plotly, using the seven completed query exports.
+The Streamlit application remains available at its existing path.
 
 ## Run
 
-Use Node.js 22.18+ (your installed Node 24 works) and the project's existing
-Python environment. From PowerShell:
+Use Node.js 22.18+ and the project's existing Python environment:
 
 ```powershell
 cd C:\Users\Gab\Documents\GitHub\STADVDB-MCO1-NYC-Taxi\dashboard-react
@@ -15,117 +14,96 @@ npm run dev
 ```
 
 Open **http://127.0.0.1:5173/**. Stop with **Ctrl+C**. Subsequent runs only need
-`npm run dev`. Port 5173 is fixed; stop any other process using it first.
-
-The startup command prepares the saved data automatically. If Python reports a
-missing package, install the existing repository requirements:
+`npm run dev`. Startup prepares the saved results automatically. If Python
+reports a missing package, install the existing requirements:
 
 ```powershell
 python -m pip install -r ..\requirements.txt
-npm run dev
 ```
 
-No database server or credentials are required. The app reads completed
-TSV/SUCCESS-log pairs from `../dashboard/exports/`. Missing or invalid reports
-show an unavailable state. It never substitutes sample data or executes SQL.
+## One question, one bento
+
+All three questions appear on one continuous page. Header links jump to a
+question; there are no separate overview/report tabs. The layout uses unequal
+tiles to distinguish the leading answer, primary comparison, and supporting
+evidence. Mobile stacks the same evidence. Local selections survive navigation
+between questions. Earlier `#/q1_*`, `#/q2_*`, and `#/q3_*` links resolve to their
+question.
+
+Card backgrounds group related evidence: yellow for text-heavy answers and
+coverage context, blue for geographic/category comparisons, green for temporal
+patterns, and warm cream for fare/tip details. Chart labels use darker secondary
+text, and the amber series stays dark enough to stand apart from tinted cards.
+
+| Question | Evidence kept together |
+| --- | --- |
+| Q1 · Where and when is taxi demand strongest? | Leading zone and share, geographic demand, zone ranking, weekday/weekend hourly profiles, monthly volume, and zone/month consistency |
+| Q2 · How do payments vary by fare, place, and time? | Card share, fare-tier composition, recorded tips, credit-card heatmap, and borough/payment comparisons |
+| Q3 · Where does rush-hour travel take longer? | Selected duration difference, paired means, distance/borough differences, selected-zone hourly profile, trip-volume support, and small/extreme-group context |
+
+The single **Data** button follows the question currently in view. Its report
+selector contains that question's supporting queries. All seven source tables,
+definitions, provenance, CSV downloads, and original TSV downloads remain
+available. The navbar retracts on downward scroll and returns on upward scroll
+or keyboard focus.
+
+## Data and scopes
+
+The app reads validated TSV/SUCCESS-log pairs from `../dashboard/exports/`.
+No database connection is needed. It never executes queries or substitutes
+samples. `scripts/prepare_data.py` reuses the existing readers, definitions,
+and conservative official taxi-zone matching, and copies the installed Python
+Plotly browser library locally. No CDN or new Python dependency is needed.
+
+- Demand map/rankings cover weekends **or** late night. Monthly views cover
+  late night; hourly views compare represented weekday/weekend dates in their
+  selected borough. Those are supporting comparisons with separately labeled
+  populations, not one joined dataset.
+- Payment shares use their own fare-tier or borough/time denominators. Cash
+  tips are not captured; returned recorded-tip means are not pooled.
+- Rush-hour comparisons use their labeled distance tier. Location profiles
+  retain their fixed weekday 2–5-mile scope and exact borough/zone identity.
+  Negative gaps remain visible. Observed differences are not causal evidence.
+- Missing periods remain gaps. Subtotals are excluded from plots. Unknown
+  denominators stay unknown, and exported group means are never averaged.
+- Data/CSV reflect the selected hourly borough or location profile. Other
+  chart-local selections and top-N rankings can show subsets of their source
+  table. The complete original TSV always preserves rollups and SQL `\N`.
+- CSV preserves nulls and literal `N/A`; formula-like string labels receive a
+  leading apostrophe for spreadsheet safety. Counts across reports overlap.
+- Map shading is pickups per zone, not area density. Ambiguous/unmatched
+  labels remain in source tables and totals.
 
 ## Refresh and build
 
-After adding completed exports, run this in a second terminal and reload:
-
-```powershell
-npm run data
-```
-
-To produce and preview a static build:
+After adding completed exports, run `npm run data` in a second terminal and
+reload. To generate and preview a static build:
 
 ```powershell
 npm run build
 npm run preview
 ```
 
-Preview opens at **http://127.0.0.1:4173/**. The generated `dist/` directory is
-self-contained, including snapshots, the Plotly browser library, original
-aggregate exports, and map boundaries. Generated assets and dependencies are
-ignored by Git; recreate them with `npm run data` or `npm run build`.
+Preview runs on **http://127.0.0.1:4173/**. The generated `dist/` includes the
+snapshots, Plotly runtime, original aggregate exports, and map boundaries.
+Generated data, build output, and dependencies are ignored by Git.
 
-## Design direction
+## Verification — 22 October 2026
 
-This implements the direction established by the competitive analysis:
+`npm run build` and the seven `npm test` calculation checks passed. React server
+rendering verified each combined question, all seven source choices, and legacy
+query-link routing. The model checks cover rollups, missing periods, local
+payment denominators, negative gaps, duplicate-cell refusal, CSV handling, and
+reconciliation against actual saved exports.
 
-- A compact overview puts a monthly trajectory beside borough concentration,
-  then payment composition beside rush-hour comparisons. Three separately
-  scoped topline values support those charts.
-- Top navigation exposes Demand, Payments, and Travel. It retracts on downward
-  scroll and returns on upward scroll or keyboard focus. Mobile uses a labeled
-  Queries dropdown; report links stay in a compact horizontal row.
-- Controls sit beside the evidence they affect. The single Data button opens
-  definitions, provenance, the current table, CSV, and the original TSV.
-- Navy, taxi yellow, and restrained supporting colors encode the data.
-  Findings stay short and calculated from the displayed population.
-- Geographic demand uses official local taxi-zone boundaries. Hover details,
-  monthly heatmaps, hourly comparisons, and paired travel-time markers provide
-  the detail previously carried by long descriptions.
+Browser interaction, screenshots, responsive layout, and WebGL rendering remain
+unverified because browser-control tools are unavailable in this session.
+Server rendering does not verify Plotly's browser rendering. The reference text
+attachment returned no extracted text and its download failed; this revision
+implements the user's question-led bento request without claiming to reproduce
+that attachment.
 
-## Coverage and measurement rules
-
-| View | Evidence |
-| --- | --- |
-| Overview | Monthly late-night demand, borough concentration, fare-tier payment mix, scoped travel-time comparison |
-| Q1 · Zones & boroughs | Top 12 selected zones, official map, overlapping borough demand categories |
-| Q1 · Hourly patterns | Weekday/weekend daily averages by hour; borough selector defaults to Manhattan |
-| Q1 · Monthly consistency | Total monthly volume, top-three zone profiles, top-12 zone/month heatmap |
-| Q2 · Fare ranges | Count/share composition by fare tier; returned mean recorded tip |
-| Q2 · Borough & time | Count/share distribution for a selected period; credit-card share across boroughs and periods |
-| Q3 · Rush hour & off-peak | Paired reported means for the selected distance; differences across all distance tiers |
-| Q3 · Location profiles | One borough/zone identity's hourly speed, duration, or count; supporting volume heatmap |
-
-Counts across reports have overlapping scopes. They are never combined into a
-single total. Subtotals are excluded from charts. Missing periods stay gaps,
-negative rush-hour differences remain visible, and zero denominators stay
-unknown. Exported subgroup means are never averaged together. Hourly borough
-charts use individual vertical scales, explicitly labeled on that page.
-
-Borough/zone filters constrain the current Data table and CSV. A chart's local
-period, measure, distance, or ranking can show a subset of that table; adjacent
-comparisons retain their labeled broader scope. The original TSV always retains
-the complete output and rollups. CSV preserves `\N` and literal `N/A`, and
-prefixes spreadsheet formula-like string labels with an apostrophe.
-
-The map joins official IDs conservatively. Ambiguous/unmatched groups remain
-in totals and downloads. Shading shows pickups per zone, not geographic density.
-
-## Validation
-
-```powershell
-npm run check
-npm test
-npm run build
-```
-
-On 22 October 2026:
-
-- TypeScript and the Vite production build passed.
-- Seven calculation checks passed: rollup exclusion, honest missing periods,
-  payment denominators, negative differences, duplicate-cell refusal, CSV
-  semantics, and reconciliation against the actual prepared exports.
-- React server rendering passed for the overview, all seven report views, and
-  all seven source inspectors using actual exports. Overview values reconciled
-  to 23.4M weekend/late-night pickups and 67.5% card share in positive-fare trips.
-- The Vite development server started on port 5173.
-- Browser interaction, screenshots, mobile layout, and WebGL map rendering
-  remain unverified: browser-control tools were unavailable and this session
-  forbids local client socket connections. Server rendering does not verify
-  Plotly's browser rendering.
-- Registry DNS was blocked during authoring. Build dependencies were provisioned
-  from existing local installations with matching package versions. The lockfile
-  retains their original registry URLs and integrity hashes; `npm ci --dry-run`
-  accepted it. A fresh registry install was not exercised in this session.
-
-## Code
-
-`scripts/prepare_data.py` reuses the existing validated export reader, source
-definitions, and map matching; it only writes `public/data/`. It also copies the
-Plotly browser runtime from the installed Python package, avoiding a second
-Plotly dependency or CDN. React components, transformations, and plots live in
-`src/`; this first pass adds no application backend or new Python dependency.
+During initial setup, registry DNS was blocked. Matching dependencies were
+provisioned from existing local installations; original registry/integrity
+metadata was retained in the lockfile, and `npm ci --dry-run` accepted it.
+A fresh registry install was not exercised in this session.

@@ -6,9 +6,11 @@ import { plotlyReady } from '../plotly-runtime';
 interface Props {
   title: string; subtitle?: string; data: Trace[]; layout?: PlotLayout;
   height?: number; note?: string; controls?: ReactNode; onSelect?: (value: string) => void;
+  headingLevel?: 2 | 3;
 }
 
-export default function Chart({ title, subtitle, data, layout = {}, height = 320, note, controls, onSelect }: Props) {
+export default function Chart({ title, subtitle, data, layout = {}, height = 320, note, controls, onSelect, headingLevel = 2 }: Props) {
+  const Heading = headingLevel === 3 ? 'h3' : 'h2';
   const ref = useRef<PlotElement>(null);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -45,7 +47,7 @@ export default function Chart({ title, subtitle, data, layout = {}, height = 320
     return () => { if (element && window.Plotly) window.Plotly.purge(element); };
   }, []);
   return <section className="chart-panel">
-    <div className="chart-heading"><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div>{controls}</div>
+    <div className="chart-heading"><div><Heading>{title}</Heading>{subtitle && <p>{subtitle}</p>}</div>{controls}</div>
     {error ? <p role="alert" className="empty-state">{error}</p> :
       <div ref={ref} className="plot" style={{ minHeight: height }} role="img" aria-label={`${title}. Exact values are available in Data.`} />}
     {note && <p className="chart-note">{note}</p>}

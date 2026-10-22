@@ -5,7 +5,7 @@ import type { Row } from '../types';
 import { colorscale } from '../plots';
 
 let boundaries: unknown;
-export default function ZoneMap({ rows }: { rows: Row[] }) {
+export default function ZoneMap({ rows, height = 430 }: { rows: Row[]; height?: number }) {
   const [geojson, setGeojson] = useState<unknown>(boundaries), [error, setError] = useState(false);
   useEffect(() => {
     if (boundaries) return;
@@ -16,8 +16,8 @@ export default function ZoneMap({ rows }: { rows: Row[] }) {
     return () => controller.abort();
   }, []);
   const mapped = rows.filter(row => row['Map status'] === 'Mapped');
-  if (!geojson) return <section className="chart-panel map-placeholder"><h2>Taxi-zone demand</h2><p role="status">{error ? 'Boundaries unavailable. Use the zone ranking.' : 'Loading taxi-zone boundaries…'}</p></section>;
-  return <Chart title="Taxi-zone demand" subtitle="Weekend or late-night pickups · per zone" height={430}
+  if (!geojson) return <section className="chart-panel map-placeholder"><h3>Taxi-zone demand</h3><p role="status">{error ? 'Boundaries unavailable. Use the zone ranking.' : 'Loading taxi-zone boundaries…'}</p></section>;
+  return <Chart title="Taxi-zone demand" subtitle="Weekend / late-night pickups" height={height} headingLevel={3}
     data={[{ type: 'choroplethmap', geojson, featureidkey: 'id', locations: mapped.map(row => row.location_id),
       z: mapped.map(row => number(row.total_filtered_pickups)), text: mapped.map(row => row.zone),
       colorscale, marker: { opacity: .9, line: { width: .35, color: '#fff' } },

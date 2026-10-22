@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { csv, fmt } from '../analytics';
 import type { Report, Row } from '../types';
 
-export default function DataDialog({ reports, current, rows, onClose }: {
-  reports: Record<string, Report>; current: string; rows: Row[] | null; onClose: () => void;
+export default function DataDialog({ reports, current, rows, views, reportIds, onClose }: {
+  reports: Record<string, Report>; current: string; rows: Row[] | null; views?: Record<string, Row[]>; reportIds?: string[]; onClose: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [id, setId] = useState(current), [page, setPage] = useState(0);
   const report = reports[id];
-  const selected = id === current && rows !== null ? rows : report.rows;
+  const selected = views?.[id] ?? (id === current && rows !== null ? rows : report.rows);
+  const currentView = views?.[id] !== undefined || (id === current && rows !== null);
   useEffect(() => { ref.current?.showModal(); }, []);
   const download = () => {
     const url = URL.createObjectURL(new Blob([csv(selected, report.columns)], { type: 'text/csv;charset=utf-8' }));
@@ -18,10 +19,10 @@ export default function DataDialog({ reports, current, rows, onClose }: {
   return <dialog className="data-dialog" ref={ref} onClose={onClose} onClick={event => { if (event.target === ref.current) ref.current.close(); }}>
     <div className="dialog-heading"><h2>Data & definitions</h2><button aria-label="Close data" className="icon-button" onClick={() => ref.current?.close()}>×</button></div>
     <label className="dialog-select">Report<select value={id} onChange={event => { setId(event.target.value); setPage(0); }}>
-      {Object.values(reports).map(item => <option key={item.id} value={item.id}>{item.title}</option>)}
+      {(reportIds ?? Object.keys(reports)).map(key => <option key={key} value={key}>{reports[key].title}</option>)}
     </select></label>
     <p>{report.scope}</p><p className="method-note">{report.caution}</p>
-    <div className="data-actions"><span>{fmt(selected.length)} rows · {id === current && rows !== null ? 'Current view' : 'Complete output, including rollups'}</span>
+    <div className="data-actions"><span>{fmt(selected.length)} rows · {currentView ? 'Current view' : 'Complete output, including rollups'}</span>
       <button onClick={download} disabled={!selected.length}>Download CSV</button></div>
     {!selected.length ? <p className="empty-state">{report.status === 'Ready' ? 'No matching groups.' : report.status}</p> :
       <div className="table-scroll" tabIndex={0} aria-label="Report data"><table><thead><tr>{report.columns.map(key => <th key={key}>{key.replaceAll('_', ' ')}</th>)}</tr></thead>
