@@ -237,6 +237,11 @@ Team-supplied benchmark runtimes appear in its registry.
 
 ## Analytics dashboard (Streamlit)
 
+An alternative React + TypeScript first pass lives in
+[`dashboard-react/`](dashboard-react/README.md). From that folder, run
+`npm install` and `npm run dev`, then open `http://127.0.0.1:5173/`.
+It uses the same completed exports and has its own navigation and chart layout.
+
 The dashboard presents all seven approved OLAP results from completed saved
 exports. Start it from the repository directory:
 
